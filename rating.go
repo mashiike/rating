@@ -25,9 +25,9 @@ func (s Score) Opponent() Score {
 
 // Rating is a variable county that represents the strength of the player
 type Rating struct {
-	Value      float64
-	Deviation  float64
-	Volatility float64
+	Value      float64 `json:"value" yaml:"value" csv:"value"`
+	Deviation  float64 `json:"deviation" yaml:"deviation" csv:"deviation"`
+	Volatility float64 `json:"volatility" yaml:"volatility" csv:"volatility"`
 }
 
 // Glicko2Scale is internal rating value

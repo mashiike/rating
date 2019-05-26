@@ -1,0 +1,4 @@
+player_id,opponent_player_id,score
+hoge,fuga,1
+hoge,piyo,0
+fuga,piyo,0.5
