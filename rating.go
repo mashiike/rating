@@ -50,7 +50,39 @@ var DefaultRating Rating = Rating{
 
 //String is for dump. fmt.Stringer interface implements
 func (r Rating) String() string {
-	return fmt.Sprintf("rating:%0.2f, rating deviation:%0.2f, volatility:%0.6f", r.Value, r.Deviation, r.Volatility)
+	min, max := r.Interval()
+	return fmt.Sprintf("rating:%0.2f (%0.2f-%0.2f), volatility:%0.6f", r.Value, min, max, r.Volatility)
+}
+
+//Interval return 95% confidence interval.
+func (r Rating) Interval() (float64, float64) {
+	return r.Value - r.Deviation*2, r.Value + r.Deviation*2
+}
+
+//IsDiff is a function to check the significance of Rating
+func (r Rating) IsDiff(o Rating) bool {
+	y := r.Value - o.Value
+	z := y / math.Sqrt(r.Deviation*r.Deviation+o.Deviation*o.Deviation)
+	if math.Abs(z) > 1.96 {
+		return true
+	}
+	return false
+}
+
+//IsStronger is checker function. this rating r is storonger than rating o.
+func (r Rating) IsStronger(o Rating) bool {
+	if r.Value-o.Value <= 0.0 {
+		return false
+	}
+	return r.IsDiff(o)
+}
+
+//IsWeeker is checker function. this rating r is weeker than rating o.
+func (r Rating) IsWeeker(o Rating) bool {
+	if r.Value-o.Value >= 0.0 {
+		return false
+	}
+	return r.IsDiff(o)
 }
 
 // glicko2Scale is internal rating value

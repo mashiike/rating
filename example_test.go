@@ -40,5 +40,5 @@ func ExampleRating() {
 	}
 	fmt.Println(player.Update(results, golicko.DefaultSetting))
 	//Output:
-	//rating:1464.05, rating deviation:151.52, volatility:0.059993
+	//rating:1464.05 (1161.02-1767.08), volatility:0.059993
 }
