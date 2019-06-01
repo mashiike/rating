@@ -12,12 +12,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Player struct {
+type player struct {
 	ID string `csv:"player_id"`
 	golicko.Rating
 }
 
-type Match struct {
+type match struct {
 	PlayerID         string        `csv:"player_id"`
 	OpponentPlayerID string        `csv:"opponent_player_id"`
 	Score            golicko.Score `csv:"score"`
@@ -49,7 +49,7 @@ func main() {
 	}
 }
 
-func updateRatings(players []Player, matches []Match, tau float64) []Player {
+func updateRatings(players []player, matches []match, tau float64) []player {
 	ratings := make(map[string]golicko.Rating, len(players))
 	results := make(map[string][]golicko.Result, len(players))
 	for _, p := range players {
@@ -77,9 +77,9 @@ func updateRatings(players []Player, matches []Match, tau float64) []Player {
 	}
 
 	setting := golicko.Setting{Tau: tau}
-	ret := make([]Player, 0, len(ratings))
+	ret := make([]player, 0, len(ratings))
 	for id, r := range ratings {
-		ret = append(ret, Player{
+		ret = append(ret, player{
 			ID:     id,
 			Rating: r.Update(results[id], setting),
 		})
@@ -87,7 +87,7 @@ func updateRatings(players []Player, matches []Match, tau float64) []Player {
 	return ret
 }
 
-func readPlayers(filename string) ([]Player, error) {
+func readPlayers(filename string) ([]player, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "file open failed")
@@ -99,8 +99,8 @@ func readPlayers(filename string) ([]Player, error) {
 		return nil, errors.Wrap(err, "decode player csv failed")
 	}
 
-	var players []Player
-	var p Player
+	var players []player
+	var p player
 	err = dec.Decode(&p)
 	for err != io.EOF {
 		if err != nil {
@@ -112,7 +112,7 @@ func readPlayers(filename string) ([]Player, error) {
 	return players, nil
 }
 
-func readMatches(filename string) ([]Match, error) {
+func readMatches(filename string) ([]match, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "file open failed")
@@ -124,8 +124,8 @@ func readMatches(filename string) ([]Match, error) {
 		return nil, errors.Wrap(err, "decode match csv failed")
 	}
 
-	var matches []Match
-	var m Match
+	var matches []match
+	var m match
 	err = dec.Decode(&m)
 	for err != io.EOF {
 		if err != nil {
@@ -137,7 +137,7 @@ func readMatches(filename string) ([]Match, error) {
 	return matches, nil
 }
 
-func writePlayers(filename string, players []Player) error {
+func writePlayers(filename string, players []player) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
