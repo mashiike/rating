@@ -13,8 +13,13 @@ const (
 	iterationLimit   = 100000
 	epsiron          = 0.000001
 
-	ScoreWin  = Score(1)
+	//In this package Score is Constants Win/Lose/Draw.
+
+	//ScoreWin is Score when winning an opponent.
+	ScoreWin = Score(1)
+	//ScoreLose is Score when losing to an opponent.
 	ScoreLose = Score(0)
+	//ScoreDraw is Score when tied to an opponent.
 	ScoreDraw = Score(0.5)
 )
 
@@ -42,7 +47,7 @@ type Rating struct {
 }
 
 //DefaultRating is fill by default values
-var DefaultRating Rating = Rating{
+var DefaultRating = Rating{
 	Value:      1500.0,
 	Deviation:  350.0,
 	Volatility: 0.06,
@@ -121,7 +126,8 @@ type Setting struct {
 	Tau float64
 }
 
-var DefaultSetting Setting = Setting{Tau: 0.5}
+//DefaultSetting is default value for update setting. in paper.
+var DefaultSetting = Setting{Tau: 0.5}
 
 // Update is compute new Rating from Results and Setting
 func (r Rating) Update(results []Result, setting Setting) Rating {
