@@ -164,7 +164,7 @@ func (s glicko2Scale) ComputeQuantity(results []Result) estimatedQuantity {
 // ApplyQuantity is Step.5 and Step.6, Step.7. Compute the next Glicko-2 scale.
 func (s glicko2Scale) ApplyQuantity(quantity estimatedQuantity, setting Setting) glicko2Scale {
 	if math.IsInf(quantity.Variance, 0) {
-		// if estimated variance is infinity, can not apply. becouse maybe no result.
+		// if estimated variance is infinity, can not apply. because maybe no result.
 		// In this case, rating value and volatility parameters remain the same, but the rating deviation increases
 		return glicko2Scale{
 			Mu:    s.Mu,
