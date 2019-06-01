@@ -8,7 +8,7 @@ executors:
       - GO111MODULE: "on"
       - TEST_RESULTS: /tmp/test-results
 jobs:
-  setup:
+  tests:
     executor:
       name: default
     steps:
@@ -26,17 +26,6 @@ jobs:
           key: v1-mod-{{ .Branch }}-{{ checksum "go.mod" }}
           paths:
               - /go/pkg/mod/cache
-      - persist_to_workspace:
-          root: /go
-          paths:
-              - pkg/mod/cache
-              - bin
-  tests:
-    executor:
-      name: default
-    steps:
-      - attach_workspace:
-          at: /go
       - run:
           name: Run all unit tests
           command: |
@@ -50,7 +39,4 @@ jobs:
 workflows:
   build-and-test:
     jobs:
-      - setup
       - tests:
-          requires:
-            - setup
