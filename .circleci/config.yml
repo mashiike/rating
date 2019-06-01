@@ -29,7 +29,7 @@ jobs:
       - run:
           name: Run all unit tests
           command: |
-            go test -v ./... | go-junit-report -set-exit-code=true > $TEST_RESULTS/go-test-report.xml;
+            go test -v ./... | go-junit-report -set-exit-code=true > $TEST_RESULTS/go-test-report.xml
       - store_artifacts:
           path: /tmp/test-results
           destination: raw-test-output
@@ -40,3 +40,4 @@ workflows:
   build-and-test:
     jobs:
       - tests
+
