@@ -50,43 +50,38 @@ func main() {
 }
 
 func updateRatings(players []Player, matches []Match, tau float64) []Player {
-	g2s := make(map[string]golicko.Glicko2Scale, len(players))
+	ratings := make(map[string]golicko.Rating, len(players))
 	results := make(map[string][]golicko.Result, len(players))
 	for _, p := range players {
-		g2s[p.ID] = p.Rating.ToGlicko2()
+		ratings[p.ID] = p.Rating
 		results[p.ID] = make([]golicko.Result, 0, 10)
 	}
 
-	defaultRating := golicko.Rating{
-		Value:      1500.0,
-		Deviation:  350.0,
-		Volatility: 0.06,
-	}
 	for _, m := range matches {
-		if _, ok := g2s[m.PlayerID]; !ok {
-			g2s[m.PlayerID] = defaultRating.ToGlicko2()
+		if _, ok := ratings[m.PlayerID]; !ok {
+			ratings[m.PlayerID] = golicko.DefaultRating
 			results[m.PlayerID] = make([]golicko.Result, 0, 10)
 		}
-		if _, ok := g2s[m.OpponentPlayerID]; !ok {
-			g2s[m.OpponentPlayerID] = defaultRating.ToGlicko2()
+		if _, ok := ratings[m.OpponentPlayerID]; !ok {
+			ratings[m.OpponentPlayerID] = golicko.DefaultRating
 			results[m.OpponentPlayerID] = make([]golicko.Result, 0, 10)
 		}
 		results[m.PlayerID] = append(results[m.PlayerID], golicko.Result{
-			Opponent: g2s[m.OpponentPlayerID],
+			Opponent: ratings[m.OpponentPlayerID],
 			Score:    m.Score,
 		})
 		results[m.OpponentPlayerID] = append(results[m.OpponentPlayerID], golicko.Result{
-			Opponent: g2s[m.PlayerID],
+			Opponent: ratings[m.PlayerID],
 			Score:    m.Score.Opponent(),
 		})
 	}
 
-	ret := make([]Player, 0, len(g2s))
-	for id, scale := range g2s {
-		quant := scale.ComputeQuantity(results[id])
+	setting := golicko.Setting{Tau: tau}
+	ret := make([]Player, 0, len(ratings))
+	for id, r := range ratings {
 		ret = append(ret, Player{
 			ID:     id,
-			Rating: scale.ApplyQuantity(quant, tau).ToRating(),
+			Rating: r.Update(results[id], setting),
 		})
 	}
 	return ret

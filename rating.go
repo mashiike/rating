@@ -2,7 +2,10 @@ package golicko
 
 //Glicko-2 Rating: see as http://www.glicko.net/glicko/glicko2.pdf
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 const (
 	valueConvateRate = 173.7178
@@ -25,21 +28,41 @@ func (s Score) Opponent() Score {
 
 // Rating is a variable county that represents the strength of the player
 type Rating struct {
-	Value      float64 `json:"value" yaml:"value" csv:"value"`
-	Deviation  float64 `json:"deviation" yaml:"deviation" csv:"deviation"`
+	//Value is a number representing the strength of the player.
+	//default value is 1500.0
+	Value float64 `json:"value" yaml:"value" csv:"value"`
+
+	//Deviation is a rating deviation, which is used to express 95% confidence intervals.
+	//default value is 350.0
+	Deviation float64 `json:"deviation" yaml:"deviation" csv:"deviation"`
+
+	//Volatility measure indicates the degree of expected fluctuation in a player’s rating.
+	//default value is 0.06
 	Volatility float64 `json:"volatility" yaml:"volatility" csv:"volatility"`
 }
 
-// Glicko2Scale is internal rating value
-type Glicko2Scale struct {
+//DefaultRating is fill by default values
+var DefaultRating Rating = Rating{
+	Value:      1500.0,
+	Deviation:  350.0,
+	Volatility: 0.06,
+}
+
+//String is for dump. fmt.Stringer interface implements
+func (r Rating) String() string {
+	return fmt.Sprintf("rating:%0.2f, rating deviation:%0.2f, volatility:%0.6f", r.Value, r.Deviation, r.Volatility)
+}
+
+// glicko2Scale is internal rating value
+type glicko2Scale struct {
 	Mu    float64
 	Phi   float64
 	Sigma float64
 }
 
 // ToGlicko2 is convert to Glicko-2 Scale from Rating. as Step.2
-func (r Rating) ToGlicko2() Glicko2Scale {
-	return Glicko2Scale{
+func (r Rating) toGlicko2() glicko2Scale {
+	return glicko2Scale{
 		Mu:    (r.Value - valueCenterValue) / valueConvateRate,
 		Phi:   r.Deviation / valueConvateRate,
 		Sigma: r.Volatility,
@@ -47,7 +70,7 @@ func (r Rating) ToGlicko2() Glicko2Scale {
 }
 
 // ToRating is convert to Rating from Glicko-2 Scale. as Step.8
-func (s Glicko2Scale) ToRating() Rating {
+func (s glicko2Scale) toRating() Rating {
 	return Rating{
 		Value:      s.Mu*valueConvateRate + valueCenterValue,
 		Deviation:  s.Phi * valueConvateRate,
@@ -55,74 +78,75 @@ func (s Glicko2Scale) ToRating() Rating {
 	}
 }
 
-func (r Rating) Equals(o Rating) bool {
-	// value and deviation tolerance is to the 1st decimal point
-	if math.Abs(r.Value-o.Value) > 0.1 {
-		return false
-	}
-	if math.Abs(r.Deviation-o.Deviation) > 0.1 {
-		return false
-	}
-	// volatility olerance is to the 4th decimal point
-	if math.Abs(r.Volatility-o.Volatility) > 0.001 {
-		return false
-	}
-
-	return true
-}
-
 // Result is matches result
 type Result struct {
-	Opponent Glicko2Scale
+	Opponent Rating
 	Score    Score
 }
 
-// EstimatedQuantity is quantity for compute next rating.
-type EstimatedQuantity struct {
+// Setting is Update setting
+type Setting struct {
+	Tau float64
+}
+
+var DefaultSetting Setting = Setting{Tau: 0.5}
+
+// Update is compute new Rating from Results and Setting
+func (r Rating) Update(results []Result, setting Setting) Rating {
+	scale := r.toGlicko2()
+	quant := scale.ComputeQuantity(results)
+	newScale := scale.ApplyQuantity(quant, setting)
+	return newScale.toRating()
+
+}
+
+// estimatedQuantity is quantity for compute next rating.
+type estimatedQuantity struct {
 	Variance    float64
 	Improvement float64
 }
 
 // ComputeQuantity is Step.3 and Step.4. Compute the quantity of Estimated Improvement and Estimated Variance.
-func (s Glicko2Scale) ComputeQuantity(results []Result) EstimatedQuantity {
+func (s glicko2Scale) ComputeQuantity(results []Result) estimatedQuantity {
 	invEV := 0.0
 	tmpImp := 0.0
 	for _, r := range results {
-		valg := fg(r.Opponent.Phi)
-		valE := fE(s.Mu, r.Opponent.Mu, r.Opponent.Phi)
+		opponent := r.Opponent.toGlicko2()
+		valg := fg(opponent.Phi)
+		valE := fE(s.Mu, opponent.Mu, opponent.Phi)
 		invEV += valg * valg * valE * (1.0 - valE)
 		tmpImp += valg * (float64(r.Score) - valE)
 	}
-	return EstimatedQuantity{
+	return estimatedQuantity{
 		Variance:    1.0 / invEV,
 		Improvement: tmpImp / invEV,
 	}
 }
 
 // ApplyQuantity is Step.5 and Step.6, Step.7. Compute the next Glicko-2 scale.
-func (s Glicko2Scale) ApplyQuantity(quantity EstimatedQuantity, tau float64) Glicko2Scale {
+func (s glicko2Scale) ApplyQuantity(quantity estimatedQuantity, setting Setting) glicko2Scale {
 	if math.IsInf(quantity.Variance, 0) {
 		// if estimated variance is infinity, can not apply. becouse maybe no result.
 		// In this case, rating value and volatility parameters remain the same, but the rating deviation increases
-		return Glicko2Scale{
+		return glicko2Scale{
 			Mu:    s.Mu,
 			Phi:   math.Sqrt(s.Phi*s.Phi + s.Sigma*s.Sigma),
 			Sigma: s.Sigma,
 		}
 	}
 
-	sigmaDash := s.determineSigma(quantity, tau)
+	sigmaDash := s.determineSigma(quantity, setting.Tau)
 	phiAsta := math.Sqrt(s.Phi*s.Phi + sigmaDash*sigmaDash)
 	phiDash := 1.0 / math.Sqrt(1.0/(phiAsta*phiAsta)+1.0/quantity.Variance)
 
-	return Glicko2Scale{
+	return glicko2Scale{
 		Mu:    s.Mu + phiDash*phiDash*quantity.Improvement/quantity.Variance,
 		Phi:   phiDash,
 		Sigma: sigmaDash,
 	}
 }
 
-func (s Glicko2Scale) determineSigma(quantity EstimatedQuantity, tau float64) float64 {
+func (s glicko2Scale) determineSigma(quantity estimatedQuantity, tau float64) float64 {
 
 	a := math.Log(s.Sigma * s.Sigma)
 	largeA := a
