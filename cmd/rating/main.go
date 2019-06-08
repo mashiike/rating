@@ -76,12 +76,11 @@ func updateRatings(players []player, matches []match, tau float64) []player {
 		})
 	}
 
-	setting := golicko.Setting{Tau: tau}
 	ret := make([]player, 0, len(ratings))
 	for id, r := range ratings {
 		ret = append(ret, player{
 			ID:     id,
-			Rating: r.Update(results[id], setting),
+			Rating: r.Update(results[id], tau),
 		})
 	}
 	return ret

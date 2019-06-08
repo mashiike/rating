@@ -38,7 +38,7 @@ func ExampleRating() {
 			Score: golicko.ScoreLose,
 		},
 	}
-	fmt.Println(player.Update(results, golicko.DefaultSetting))
+	fmt.Println(player.Update(results, 0.5))
 	//Output:
 	//rating:1464.05 (1161.02-1767.08), volatility:0.059993
 }

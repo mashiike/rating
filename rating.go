@@ -8,12 +8,17 @@ import (
 )
 
 const (
-	valueConvateRate = 173.7178
-	valueCenterValue = 1500.0
-	iterationLimit   = 100000
-	epsiron          = 0.000001
+	//rating <=> glicko2 scale deviation convart rate
+	convartRate = 173.7178
+	//rating center value
+	centerValue = 1500.0
+	//x ~ N(0,1), this value is z when P(-z <= x <= z) = 0.95
+	zscore95 = 1.96
 
-	//In this package Score is Constants Win/Lose/Draw.
+	//iterative algorithm truncates with this number
+	iterationLimit = 100000
+	//end condition of iterative algorithm
+	epsiron = 0.000001
 
 	//ScoreWin is Score when winning an opponent.
 	ScoreWin = Score(1)
@@ -68,7 +73,7 @@ func (r Rating) Interval() (float64, float64) {
 func (r Rating) IsDiff(o Rating) bool {
 	y := r.Value - o.Value
 	z := y / math.Sqrt(r.Deviation*r.Deviation+o.Deviation*o.Deviation)
-	if math.Abs(z) > 1.96 {
+	if math.Abs(z) > zscore95 {
 		return true
 	}
 	return false
@@ -100,8 +105,8 @@ type glicko2Scale struct {
 // ToGlicko2 is convert to Glicko-2 Scale from Rating. as Step.2
 func (r Rating) toGlicko2() glicko2Scale {
 	return glicko2Scale{
-		Mu:    (r.Value - valueCenterValue) / valueConvateRate,
-		Phi:   r.Deviation / valueConvateRate,
+		Mu:    (r.Value - centerValue) / convartRate,
+		Phi:   r.Deviation / convartRate,
 		Sigma: r.Volatility,
 	}
 }
@@ -109,8 +114,8 @@ func (r Rating) toGlicko2() glicko2Scale {
 // ToRating is convert to Rating from Glicko-2 Scale. as Step.8
 func (s glicko2Scale) toRating() Rating {
 	return Rating{
-		Value:      s.Mu*valueConvateRate + valueCenterValue,
-		Deviation:  s.Phi * valueConvateRate,
+		Value:      s.Mu*convartRate + centerValue,
+		Deviation:  s.Phi * convartRate,
 		Volatility: s.Sigma,
 	}
 }
@@ -121,21 +126,12 @@ type Result struct {
 	Score    Score
 }
 
-// Setting is Update setting
-type Setting struct {
-	Tau float64
-}
-
-//DefaultSetting is default value for update setting. in paper.
-var DefaultSetting = Setting{Tau: 0.5}
-
 // Update is compute new Rating from Results and Setting
-func (r Rating) Update(results []Result, setting Setting) Rating {
+func (r Rating) Update(results []Result, tau float64) Rating {
 	scale := r.toGlicko2()
 	quant := scale.ComputeQuantity(results)
-	newScale := scale.ApplyQuantity(quant, setting)
+	newScale := scale.ApplyQuantity(quant, tau)
 	return newScale.toRating()
-
 }
 
 // estimatedQuantity is quantity for compute next rating.
@@ -162,7 +158,7 @@ func (s glicko2Scale) ComputeQuantity(results []Result) estimatedQuantity {
 }
 
 // ApplyQuantity is Step.5 and Step.6, Step.7. Compute the next Glicko-2 scale.
-func (s glicko2Scale) ApplyQuantity(quantity estimatedQuantity, setting Setting) glicko2Scale {
+func (s glicko2Scale) ApplyQuantity(quantity estimatedQuantity, tau float64) glicko2Scale {
 	if math.IsInf(quantity.Variance, 0) {
 		// if estimated variance is infinity, can not apply. because maybe no result.
 		// In this case, rating value and volatility parameters remain the same, but the rating deviation increases
@@ -173,7 +169,7 @@ func (s glicko2Scale) ApplyQuantity(quantity estimatedQuantity, setting Setting)
 		}
 	}
 
-	sigmaDash := s.determineSigma(quantity, setting.Tau)
+	sigmaDash := s.determineSigma(quantity, tau)
 	phiAsta := math.Sqrt(s.Phi*s.Phi + sigmaDash*sigmaDash)
 	phiDash := 1.0 / math.Sqrt(1.0/(phiAsta*phiAsta)+1.0/quantity.Variance)
 
