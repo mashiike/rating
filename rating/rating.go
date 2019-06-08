@@ -5,7 +5,7 @@
 package rating
 
 import (
-	"fmt"
+	"encoding/binary"
 	"math"
 	"sync"
 
@@ -96,12 +96,6 @@ func (r Rating) Interval() (float64, float64) {
 	return s - rd2, s + rd2
 }
 
-//String is for dump. fmt.Stringer interface implements
-func (r Rating) String() string {
-	min, max := r.Interval()
-	return fmt.Sprintf("%0.2f (%0.2f-%0.2f)", r.Strength(), min, max)
-}
-
 //IsDifferent is a function to check the significance of Rating
 func (r Rating) IsDifferent(o Rating) bool {
 	y := r.mu - o.mu
@@ -132,6 +126,89 @@ func (r Rating) IsWeeker(o Rating) bool {
 // this value 1500 and 1700, both RD is 0 => P(1700 is win) = 0.76
 func (r Rating) WinProb(o Rating) float64 {
 	return nthFloor(fE(r.mu, o.mu, geometricMean(r.phi, o.phi)), 4)
+}
+
+func float64ToByte(float float64) []byte {
+	bits := math.Float64bits(float)
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, bits)
+
+	return bytes
+}
+
+func byteToFloat64(bytes []byte) float64 {
+	bits := binary.LittleEndian.Uint64(bytes)
+
+	return math.Float64frombits(bits)
+}
+
+const ratingBinaryVersion byte = 1
+
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (r Rating) MarshalBinary() ([]byte, error) {
+	b := make([]byte, 0, 25)
+	b = append(b, ratingBinaryVersion)
+	b = append(b, float64ToByte(r.mu)...)
+	b = append(b, float64ToByte(r.phi)...)
+	b = append(b, float64ToByte(r.sigma)...)
+	return b, nil
+}
+
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+func (r *Rating) UnmarshalBinary(data []byte) error {
+	buf := data
+	if len(buf) == 0 {
+		return errors.New("Rating.UnmarshalBinary: no data")
+	}
+
+	if buf[0] != ratingBinaryVersion {
+		return errors.New("Rating.UnmarshalBinary: unsupported version")
+	}
+
+	if len(buf) != 25 {
+		return errors.New("Rating.UnmarshalBinary: invalid length")
+	}
+
+	r.mu = byteToFloat64(buf[1:9])
+	r.phi = byteToFloat64(buf[9:17])
+	r.sigma = byteToFloat64(buf[17:25])
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+// The rating is a quoted string in Default format
+func (r Rating) MarshalJSON() ([]byte, error) {
+	b := make([]byte, 0, len(DefaultFormat)+2)
+	b = append(b, '"')
+	b = r.AppendFormat(b, DefaultFormat)
+	b = append(b, '"')
+	return b, nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// The rating is expected to be a quoted string in Default format.
+func (r *Rating) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	var err error
+	*r, err = Parse(`"`+DefaultFormat+`"`, string(data))
+	return err
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+// The rating is formatted in Default Format.
+func (r Rating) MarshalText() ([]byte, error) {
+	b := make([]byte, 0, len(DefaultFormat))
+	return r.AppendFormat(b, DefaultFormat), nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+// The rating is expected to be in Default Format.
+func (r *Rating) UnmarshalText(data []byte) error {
+	var err error
+	*r, err = Parse(DefaultFormat, string(data))
+	return err
 }
 
 //Update is utils function for rating update. case non sequentially update, use this function.

@@ -1,6 +1,7 @@
 package rating_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -87,5 +88,44 @@ func TestRatingCompare(t *testing.T) {
 				t.Errorf("unexpected WinProb result: %v", gotWin)
 			}
 		})
+	}
+}
+
+func TestMarshalBinary(t *testing.T) {
+	r0 := rating.Default(0.06)
+	enc, err := r0.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r1 := rating.Rating{}
+	if err := r1.UnmarshalBinary(enc); err != nil {
+		t.Fatal(err)
+	}
+	if r1 != r0 {
+		t.Errorf("r0=%#v\nr1=%#v\nwant identical structures", r0, r1)
+	}
+}
+
+var jsonTests = []struct {
+	value rating.Rating
+	json  string
+}{
+	{rating.New(1500.0, 350.0, 0.25), `"1500.0p-700.0v=0.25"`},
+	{rating.New(1700.0, 50.0, 0.059999), `"1700.0p-100.0v=0.059999"`},
+}
+
+func TestMarshalJSON(t *testing.T) {
+	for _, tt := range jsonTests {
+		var jsonRating rating.Rating
+
+		if jsonBytes, err := json.Marshal(tt.value); err != nil {
+			t.Errorf("%v json.Marshal error = %v, want nil", tt.value, err)
+		} else if string(jsonBytes) != tt.json {
+			t.Errorf("%v JSON = %#q, want %#q", tt.value, string(jsonBytes), tt.json)
+		} else if err = json.Unmarshal(jsonBytes, &jsonRating); err != nil {
+			t.Errorf("%v json.Unmarshal error = %v, want nil", tt.value, err)
+		} else if jsonRating != tt.value {
+			t.Errorf("Unmarshaled rating = %v, want %v", jsonRating, tt.value)
+		}
 	}
 }

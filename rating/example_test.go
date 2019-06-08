@@ -24,7 +24,7 @@ func ExampleRating() {
 	fmt.Printf("deviation : %f\n", updated.Deviation())
 	fmt.Printf("volatility: %f\n", updated.Volatility())
 	//Output:
-	//1464.05 (1161.03-1767.07)
+	//1464.0 (1161.0-1767.1 v=0.059996)
 	//strength  : 1464.050000
 	//deviation : 151.510000
 	//volatility: 0.059996
