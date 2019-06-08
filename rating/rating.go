@@ -278,6 +278,21 @@ func (e *Estimated) ApplyMatch(opponent Rating, score float64) error {
 	return nil
 }
 
+// Rating returns the current estimate
+func (e *Estimated) Rating() Rating {
+	return e.computeRating(e.Fixed.sigma)
+}
+
+func (e *Estimated) computeRating(sigmaDash float64) Rating {
+	phiAsta := geometricMean(e.Fixed.phi, sigmaDash)
+	phiDash := 1.0 / math.Sqrt(1.0/(math.Pow(phiAsta, 2))+e.Accuracy)
+	return Rating{
+		mu:    e.Fixed.mu + math.Pow(phiDash, 2)*e.Improvement*e.Accuracy,
+		phi:   phiDash,
+		sigma: sigmaDash,
+	}
+}
+
 // Fix ends the rating period and determines the new rating.
 func (e *Estimated) Fix() error {
 	e.Lock()
@@ -295,11 +310,7 @@ func (e *Estimated) Fix() error {
 		return nil
 	}
 	sigmaDash := e.determineSigma()
-	phiAsta := geometricMean(e.Fixed.phi, sigmaDash)
-	phiDash := 1.0 / math.Sqrt(1.0/(math.Pow(phiAsta, 2))+e.Accuracy)
-	e.Fixed.mu += math.Pow(phiDash, 2) * e.Improvement * e.Accuracy
-	e.Fixed.phi = phiDash
-	e.Fixed.sigma = sigmaDash
+	e.Fixed = e.computeRating(sigmaDash)
 	return nil
 }
 
