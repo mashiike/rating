@@ -8,19 +8,19 @@ import (
 	"os"
 
 	"github.com/jszwec/csvutil"
-	"github.com/mashiike/golicko"
+	"github.com/mashiike/golicko/rating"
 	"github.com/pkg/errors"
 )
 
 type player struct {
-	ID string `csv:"player_id"`
-	golicko.Rating
+	ID            string `csv:"player_id"`
+	rating.Rating `csv:"rating"`
 }
 
 type match struct {
-	PlayerID         string        `csv:"player_id"`
-	OpponentPlayerID string        `csv:"opponent_player_id"`
-	Score            golicko.Score `csv:"score"`
+	PlayerID         string  `csv:"player_id"`
+	OpponentPlayerID string  `csv:"opponent_player_id"`
+	Score            float64 `csv:"score"`
 }
 
 func main() {
@@ -50,37 +50,38 @@ func main() {
 }
 
 func updateRatings(players []player, matches []match, tau float64) []player {
-	ratings := make(map[string]golicko.Rating, len(players))
-	results := make(map[string][]golicko.Result, len(players))
+	ratings := make(map[string]rating.Rating, len(players))
+	opponents := make(map[string][]rating.Rating, len(players))
+	scores := make(map[string][]float64, len(players))
+	initialize := func(l, c int) ([]rating.Rating, []float64) {
+		return make([]rating.Rating, l, c), make([]float64, l, c)
+	}
 	for _, p := range players {
 		ratings[p.ID] = p.Rating
-		results[p.ID] = make([]golicko.Result, 0, 10)
+		opponents[p.ID], scores[p.ID] = initialize(0, 10)
 	}
 
 	for _, m := range matches {
 		if _, ok := ratings[m.PlayerID]; !ok {
-			ratings[m.PlayerID] = golicko.DefaultRating
-			results[m.PlayerID] = make([]golicko.Result, 0, 10)
+			ratings[m.PlayerID] = rating.Default(0.06)
+			opponents[m.PlayerID], scores[m.PlayerID] = initialize(0, 10)
 		}
 		if _, ok := ratings[m.OpponentPlayerID]; !ok {
-			ratings[m.OpponentPlayerID] = golicko.DefaultRating
-			results[m.OpponentPlayerID] = make([]golicko.Result, 0, 10)
+			ratings[m.OpponentPlayerID] = rating.Default(0.06)
+			opponents[m.OpponentPlayerID], scores[m.OpponentPlayerID] = initialize(0, 10)
 		}
-		results[m.PlayerID] = append(results[m.PlayerID], golicko.Result{
-			Opponent: ratings[m.OpponentPlayerID],
-			Score:    m.Score,
-		})
-		results[m.OpponentPlayerID] = append(results[m.OpponentPlayerID], golicko.Result{
-			Opponent: ratings[m.PlayerID],
-			Score:    m.Score.Opponent(),
-		})
+		opponents[m.PlayerID] = append(opponents[m.PlayerID], ratings[m.OpponentPlayerID])
+		scores[m.PlayerID] = append(scores[m.PlayerID], m.Score)
+		opponents[m.OpponentPlayerID] = append(opponents[m.OpponentPlayerID], ratings[m.PlayerID])
+		scores[m.OpponentPlayerID] = append(scores[m.OpponentPlayerID], 1.0-m.Score)
 	}
 
 	ret := make([]player, 0, len(ratings))
 	for id, r := range ratings {
+		nr, _ := r.Update(opponents[id], scores[id], tau)
 		ret = append(ret, player{
 			ID:     id,
-			Rating: r.Update(results[id], tau),
+			Rating: nr,
 		})
 	}
 	return ret
