@@ -8,45 +8,5 @@ This is the Go implementation of Gliko2 Rating
 
 ## Usage
 
-### Import the package
-
-```go
-import "github.com/mashiike/golicko"
-```
-
-### Use Rating and Result struct
-
-```go
-player := golicko.Rating{
-	Value:      1500.0,
-	Deviation:  200.0,
-	Volatility: 0.06,
-}
-results := []golicko.Result{
-	golicko.Result{
-		Opponent: golicko.Rating{
-			Value:      1400.0,
-			Deviation:  30.0,
-			Volatility: 0.06,
-		},
-		Score: golicko.ScoreWin,
-	},
-	golicko.Result{
-		Opponent: golicko.Rating{
-			Value:      1550.0,
-			Deviation:  100.0,
-			Volatility: 0.06,
-		},
-		Score: golicko.ScoreLose,
-	},
-	golicko.Result{
-		Opponent: golicko.Rating{
-			Value:      1700.0,
-			Deviation:  300.0,
-			Volatility: 0.06,
-		},
-		Score: golicko.ScoreDraw,
-	},
-}
-player = player.Update(results, golicko.DefaultSetting))
-```
+### simple usecase
+see as [package rating](rating/README.md)
