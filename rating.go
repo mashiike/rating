@@ -95,6 +95,14 @@ func (r Rating) IsWeeker(o Rating) bool {
 	return r.IsDiff(o)
 }
 
+// WinProb is estimate winning probability,
+// this value 1500 and 1700, both RD is 0 => P(1700 is win) = 0.76
+func (r Rating) WinProb(o Rating) float64 {
+	myScale := r.toGlicko2()
+	oppoScale := o.toGlicko2()
+	return math.Floor(fE(myScale.Mu, oppoScale.Mu, math.Sqrt(myScale.Phi*myScale.Phi+oppoScale.Phi*oppoScale.Phi))*1000.0) / 1000.0
+}
+
 // glicko2Scale is internal rating value
 type glicko2Scale struct {
 	Mu    float64

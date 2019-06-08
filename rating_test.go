@@ -17,6 +17,7 @@ func TestRatingCompare(t *testing.T) {
 		leftDev    float64
 		rightVal   float64
 		rightDev   float64
+		winProb    float64
 	}{
 		{
 			isDiff:     false,
@@ -26,6 +27,7 @@ func TestRatingCompare(t *testing.T) {
 			leftDev:    350.0,
 			rightVal:   1600.0,
 			rightDev:   350.0,
+			winProb:    0.423,
 		},
 		{
 			isDiff:     false,
@@ -35,6 +37,7 @@ func TestRatingCompare(t *testing.T) {
 			leftDev:    50.0,
 			rightVal:   1600.0,
 			rightDev:   50.0,
+			winProb:    0.363,
 		},
 		{
 			isDiff:     true,
@@ -44,6 +47,7 @@ func TestRatingCompare(t *testing.T) {
 			leftDev:    50.0,
 			rightVal:   1700.0,
 			rightDev:   50.0,
+			winProb:    0.245,
 		},
 		{
 			isDiff:     true,
@@ -53,6 +57,7 @@ func TestRatingCompare(t *testing.T) {
 			leftDev:    42.0,
 			rightVal:   1420.0,
 			rightDev:   42.0,
+			winProb:    0.711,
 		},
 	}
 	for i, c := range cases {
@@ -83,6 +88,11 @@ func TestRatingCompare(t *testing.T) {
 			got = left.IsStronger(right)
 			if got != c.isStronger {
 				t.Errorf("unexpected IsStronger result: %v", got)
+			}
+
+			gotWin := left.WinProb(right)
+			if gotWin != c.winProb {
+				t.Errorf("unexpected WinProb result: %v", gotWin)
 			}
 		})
 	}
