@@ -234,22 +234,22 @@ type Estimated struct {
 	sync.Mutex
 
 	// in ref[1], this value is v^-1
-	Accuracy float64
+	Accuracy float64 `json:"accuracy"`
 	// in ref[1], this value is delta
-	Improvement float64
+	Improvement float64 `json:"improvement"`
 	// base fixed rating
-	Fixed Rating
+	Fixed Rating `json:"fixed"`
 	// system paramter tau. this value for determine next volatility.
 	// in ref[1] p.1:
 	// "Reasonable choices are between 0.3 and 1.2,
 	// though the system should be tested to decide which value results in greatest predictive accuracy. "
-	Tau float64
+	Tau float64 `json:"tau"`
 
 	//following variables tmp value for determine next sigma
-	a       float64
-	v       float64
-	sqDelta float64
-	sqPhi   float64
+	a       float64 `json:"-"`
+	v       float64 `json:"-"`
+	sqDelta float64 `json:"-"`
+	sqPhi   float64 `json:"-"`
 }
 
 //NewEstimated is initial estimated value constractor
