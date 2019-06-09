@@ -17,6 +17,16 @@ const (
 )
 
 //Rating Format examples
+//I was impressed by the Format and Parse of time.Time, and added Rating.Parse and Rating.Format to Rating.
+//The notation of Rating has various forms.
+//Rating.Format and Rating.Parse can handle the notation in a format like Const below.
+//elements is
+//  Strength         1500.0
+//  Deviation        350.0
+//  Volatility       0.06
+//  LowerStrength    800.0
+//  UpperStrength    2200.0
+//  95%PlusMinusDiff 700.0
 const (
 	StrengthOnlyFormat = "1500.0"
 	WithRangeFormat    = "1500.0 (800.0-2200.0)"
