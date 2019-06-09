@@ -1,4 +1,4 @@
-package golicko
+package utils
 
 import (
 	"strconv"

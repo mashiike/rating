@@ -1,26 +1,26 @@
-package golicko_test
+package utils_test
 
 import (
 	"fmt"
 	"sort"
 	"time"
 
-	"github.com/mashiike/golicko"
+	"github.com/mashiike/golicko/utils"
 )
 
 func ExampleMatch() {
 	loc, _ := time.LoadLocation("Asia/Tokyo")
 	baseTime := time.Date(2019, 05, 01, 0, 0, 0, 0, loc)
-	config := golicko.NewConfig()
-	players := map[string]golicko.IPlayer{
-		"sheep":   golicko.NewPlayer(baseTime, config),
-		"goat":    golicko.NewPlayer(baseTime, config),
-		"donkey":  golicko.NewPlayer(baseTime, config),
-		"horse":   golicko.NewPlayer(baseTime, config),
-		"giraffe": golicko.NewPlayer(baseTime, config),
+	config := utils.NewConfig()
+	players := map[string]utils.IPlayer{
+		"sheep":   utils.NewPlayer(baseTime, config),
+		"goat":    utils.NewPlayer(baseTime, config),
+		"donkey":  utils.NewPlayer(baseTime, config),
+		"horse":   utils.NewPlayer(baseTime, config),
+		"giraffe": utils.NewPlayer(baseTime, config),
 	}
 
-	matches := []golicko.Match{
+	matches := []utils.Match{
 		//1st week
 		{players["sheep"], players["goat"], nil, baseTime.Add(time.Hour)},
 		{players["sheep"], players["donkey"], players["sheep"], baseTime.Add(time.Hour)},
@@ -44,7 +44,7 @@ func ExampleMatch() {
 	//sort by rating
 	pairs := []struct {
 		name string
-		p    golicko.IPlayer
+		p    utils.IPlayer
 	}{
 		{"sheep", players["sheep"]},
 		{"donkey", players["donkey"]},

@@ -1,13 +1,13 @@
-package golicko_test
+package utils_test
 
 import (
 	"testing"
 
-	"github.com/mashiike/golicko"
+	"github.com/mashiike/golicko/utils"
 )
 
 func TestConfig_InititalVolatility(t *testing.T) {
-	c := golicko.NewConfig()
+	c := utils.NewConfig()
 	got := c.InitialVolatility()
 	expected := 0.276152
 	if got != expected {
