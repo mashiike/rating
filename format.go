@@ -110,46 +110,48 @@ func parse(layout, value string, defaultVolatility float64) (Rating, error) {
 		}
 	}
 	if deviation == 0.0 {
-		switch {
-		case lower != 0.0 && upper != 0.0 && lower <= upper:
-			deviation = (upper - lower) / 4.0
-		case lower != 0.0 && strength != 0.0 && lower <= strength:
-			deviation = (strength - lower) / 2.0
-		case strength != 0.0 && upper != 0.0 && strength <= upper:
-			deviation = (upper - strength) / 4.0
-		default:
+		deviation = (upper - lower) / 4.0
+		if deviation == 0.0 {
 			deviation = InitialDeviation
 		}
 	}
 	return New(strength, deviation, volatility), nil
 }
 
+type formatElem struct {
+	face     string
+	stdChunk int
+}
+
+func (e formatElem) first() int {
+	return int(e.face[0])
+}
+
+func (e formatElem) isMatch(i int, layout string) bool {
+	return len(layout) >= i+len(e.face) && layout[i:i+len(e.face)] == e.face
+}
+
+func (e formatElem) separate(i int, layout string) (prefix string, std int, suffix string) {
+	return layout[0:i], e.stdChunk, layout[i+len(e.face):]
+}
+
+var elems = []formatElem{
+	{"0.06", stdVolatility},
+	{"1500.0", stdStrength},
+	{"2200.0", stdUpper},
+	{"350.0", stdDeviation},
+	{"700.0", stdError},
+	{"800.0", stdLower},
+}
+
 func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 	for i := 0; i < len(layout); i++ {
-		switch c := int(layout[i]); c {
-		case '0': // volatility
-			if len(layout) >= i+4 && layout[i:i+4] == "0.06" {
-				return layout[0:i], stdVolatility, layout[i+4:]
-			}
-		case '1': //strength
-			if len(layout) >= i+6 && layout[i:i+6] == "1500.0" {
-				return layout[0:i], stdStrength, layout[i+6:]
-			}
-		case '2': //upper strength
-			if len(layout) >= i+6 && layout[i:i+6] == "2200.0" {
-				return layout[0:i], stdUpper, layout[i+6:]
-			}
-		case '3': //deviation
-			if len(layout) >= i+5 && layout[i:i+5] == "350.0" {
-				return layout[0:i], stdDeviation, layout[i+5:]
-			}
-		case '7': //error = 2.0 * deviation
-			if len(layout) >= i+5 && layout[i:i+5] == "700.0" {
-				return layout[0:i], stdError, layout[i+5:]
-			}
-		case '8': //lower strength
-			if len(layout) >= i+5 && layout[i:i+5] == "800.0" {
-				return layout[0:i], stdLower, layout[i+5:]
+		for _, elem := range elems {
+			if c := int(layout[i]); c == elem.first() {
+				if elem.isMatch(i, layout) {
+					return elem.separate(i, layout)
+				}
+				continue
 			}
 		}
 	}
