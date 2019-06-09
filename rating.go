@@ -1,7 +1,10 @@
 // Package rating implements the simple glicko-2 Rating.
 // Glicko-2 Rating: see as following. (within this package, denoted as ref[1] below)
-// Professor Mark E. Glickman. "Example of the Glicko-2 system" http://www.glicko.net/glicko/glicko2.pdf
-// Note: The variable names in this package match the mathematical Greek letter variables of the dissertation.
+//
+//   Professor Mark E. Glickman. "Example of the Glicko-2 system" http://www.glicko.net/glicko/glicko2.pdf
+//
+// Note : The variable names in this package match the mathematical Greek letter variables of the dissertation.
+// Note2: This English is written by the power of Google Translate.
 package rating
 
 import (
