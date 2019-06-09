@@ -291,6 +291,9 @@ func (e *Estimated) Rating() Rating {
 func (e *Estimated) computeRating(sigmaDash float64) Rating {
 	phiAsta := rootSumSq(e.Fixed.phi, sigmaDash)
 	phiDash := 1.0 / math.Sqrt(1.0/(math.Pow(phiAsta, 2))+e.Accuracy)
+	if phiDash > startPhi {
+		phiDash = startPhi
+	}
 	return Rating{
 		mu:    e.Fixed.mu + math.Pow(phiDash, 2)*e.Improvement*e.Accuracy,
 		phi:   phiDash,
