@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/jszwec/csvutil"
 	"github.com/mashiike/golicko"
@@ -14,20 +18,21 @@ import (
 
 type player struct {
 	ID string `csv:"player_id"`
-	golicko.Rating
+	*golicko.Player
 }
 
 type match struct {
-	PlayerID         string        `csv:"player_id"`
-	OpponentPlayerID string        `csv:"opponent_player_id"`
-	Score            golicko.Score `csv:"score"`
+	LeftID    string    `csv:"left_id"`
+	RightID   string    `csv:"right_id"`
+	WinnerID  string    `csv:"winner_id"`
+	OutcomeAt time.Time `csv:"outcome_at"`
 }
 
 func main() {
 	var (
-		playersFile = flag.String("p", "./example_players.csv", "players list")
+		playersFile = flag.String("p", "./example_players.json", "players list")
 		matchesFile = flag.String("m", "./example_matches.csv", "matches list")
-		outputFile  = flag.String("o", "./output.csv", "after updated players list")
+		outputFile  = flag.String("o", "./output.json", "after updated players list")
 		tau         = flag.Float64("tau", 0.5, "tau value (0.3 ~ 1.6) default 0.5")
 	)
 	flag.Parse()
@@ -50,37 +55,47 @@ func main() {
 }
 
 func updateRatings(players []player, matches []match, tau float64) []player {
-	ratings := make(map[string]golicko.Rating, len(players))
-	results := make(map[string][]golicko.Result, len(players))
+	config := golicko.NewConfig()
+	loc, _ := time.LoadLocation("Asia/Tokyo")
+	baseTime := time.Date(2019, 05, 01, 0, 0, 0, 0, loc)
+	config.Tau = tau
+	playersMap := make(map[string]*golicko.Player, len(players))
 	for _, p := range players {
-		ratings[p.ID] = p.Rating
-		results[p.ID] = make([]golicko.Result, 0, 10)
+		playersMap[p.ID] = p.Player
 	}
-
 	for _, m := range matches {
-		if _, ok := ratings[m.PlayerID]; !ok {
-			ratings[m.PlayerID] = golicko.DefaultRating
-			results[m.PlayerID] = make([]golicko.Result, 0, 10)
+		left, ok := playersMap[m.LeftID]
+		if !ok {
+			left = golicko.NewPlayer(baseTime, config)
+			playersMap[m.LeftID] = left
+
 		}
-		if _, ok := ratings[m.OpponentPlayerID]; !ok {
-			ratings[m.OpponentPlayerID] = golicko.DefaultRating
-			results[m.OpponentPlayerID] = make([]golicko.Result, 0, 10)
+		right, ok := playersMap[m.RightID]
+		if !ok {
+			right = golicko.NewPlayer(baseTime, config)
+			playersMap[m.RightID] = right
+
 		}
-		results[m.PlayerID] = append(results[m.PlayerID], golicko.Result{
-			Opponent: ratings[m.OpponentPlayerID],
-			Score:    m.Score,
-		})
-		results[m.OpponentPlayerID] = append(results[m.OpponentPlayerID], golicko.Result{
-			Opponent: ratings[m.PlayerID],
-			Score:    m.Score.Opponent(),
-		})
+		winner, ok := playersMap[m.WinnerID]
+		if !ok {
+			winner = nil
+		}
+		match := &golicko.Match{
+			Left:      left,
+			Right:     right,
+			Winner:    winner,
+			OutcomeAt: m.OutcomeAt,
+		}
+		if err := match.Apply(config); err != nil {
+			panic(err)
+		}
 	}
 
-	ret := make([]player, 0, len(ratings))
-	for id, r := range ratings {
+	ret := make([]player, 0, len(playersMap))
+	for id, p := range playersMap {
 		ret = append(ret, player{
 			ID:     id,
-			Rating: r.Update(results[id], tau),
+			Player: p,
 		})
 	}
 	return ret
@@ -93,20 +108,28 @@ func readPlayers(filename string) ([]player, error) {
 	}
 	defer file.Close()
 
-	dec, err := csvutil.NewDecoder(csv.NewReader(file))
-	if err != nil {
-		return nil, errors.Wrap(err, "decode player csv failed")
+	scanner := bufio.NewScanner(file)
+	var buf bytes.Buffer
+	buf.WriteByte('[')
+	lineCount := 0
+
+	for scanner.Scan() {
+		b := scanner.Bytes()
+
+		buf.Write(b)
+		buf.WriteByte(',')
+
+		lineCount += 1
+	}
+	if lineCount == 0 {
+		buf.WriteByte(',')
 	}
 
-	var players []player
-	var p player
-	err = dec.Decode(&p)
-	for err != io.EOF {
-		if err != nil {
-			return nil, errors.Wrap(err, "player decode line failed")
-		}
-		players = append(players, p)
-		err = dec.Decode(&p)
+	data := buf.Bytes()
+	data[len(data)-1] = ']'
+	players := make([]player, lineCount)
+	if err := json.Unmarshal(data, &players); err != nil {
+		return nil, err
 	}
 	return players, nil
 }
@@ -142,11 +165,9 @@ func writePlayers(filename string, players []player) error {
 		return err
 	}
 	defer file.Close()
-	writer := csv.NewWriter(file)
-	enc := csvutil.NewEncoder(writer)
+	enc := json.NewEncoder(file)
 	for _, p := range players {
 		enc.Encode(p)
 	}
-	writer.Flush()
 	return nil
 }
