@@ -244,7 +244,7 @@ type Estimated struct {
 	Improvement float64 `json:"improvement"`
 	// base fixed rating
 	Fixed Rating `json:"fixed"`
-	// system paramter tau. this value for determine next volatility.
+	// system parameter tau. this value for determine next volatility.
 	// in ref[1] p.1:
 	// "Reasonable choices are between 0.3 and 1.2,
 	// though the system should be tested to decide which value results in greatest predictive accuracy. "
