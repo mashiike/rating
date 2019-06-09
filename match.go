@@ -1,6 +1,7 @@
 package golicko
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/mashiike/golicko/rating"
@@ -66,7 +67,7 @@ func (m *Match) Apply(config *Config) error {
 	if m.Left == m.Right {
 		return errors.New("both player is same")
 	}
-	if !(m.Winner == nil || m.Left == m.Winner || m.Right == m.Winner) {
+	if !(isNil(m.Winner) || m.Left == m.Winner || m.Right == m.Winner) {
 		return errors.New("not match player win")
 	}
 	if config == nil {
@@ -92,4 +93,11 @@ func (m *Match) Apply(config *Config) error {
 	}
 
 	return nil
+}
+
+func isNil(x interface{}) bool {
+	if x == nil || reflect.ValueOf(x).IsNil() {
+		return true
+	}
+	return false
 }
