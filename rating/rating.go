@@ -104,7 +104,7 @@ func (r Rating) Interval() (float64, float64) {
 //IsDifferent is a function to check the significance of Rating
 func (r Rating) IsDifferent(o Rating) bool {
 	y := r.mu - o.mu
-	z := y / geometricMean(r.phi, o.phi)
+	z := y / rootSumSq(r.phi, o.phi)
 	if math.Abs(z) > zscore95 {
 		return true
 	}
@@ -130,7 +130,7 @@ func (r Rating) IsWeeker(o Rating) bool {
 // WinProb is estimate winning probability,
 // this value 1500 and 1700, both RD is 0 => P(1700 is win) = 0.76
 func (r Rating) WinProb(o Rating) float64 {
-	return nthFloor(fE(r.mu, o.mu, geometricMean(r.phi, o.phi)), 4)
+	return nthFloor(fE(r.mu, o.mu, rootSumSq(r.phi, o.phi)), 4)
 }
 
 func float64ToByte(float float64) []byte {
@@ -289,7 +289,7 @@ func (e *Estimated) Rating() Rating {
 }
 
 func (e *Estimated) computeRating(sigmaDash float64) Rating {
-	phiAsta := geometricMean(e.Fixed.phi, sigmaDash)
+	phiAsta := rootSumSq(e.Fixed.phi, sigmaDash)
 	phiDash := 1.0 / math.Sqrt(1.0/(math.Pow(phiAsta, 2))+e.Accuracy)
 	return Rating{
 		mu:    e.Fixed.mu + math.Pow(phiDash, 2)*e.Improvement*e.Accuracy,
@@ -308,7 +308,7 @@ func (e *Estimated) Fix() error {
 	if e.Accuracy == 0.0 {
 		// if estimated accuracy is zero, can not apply. because maybe no matches.
 		// In this case, rating value and volatility parameters remain the same, but the rating deviation increases
-		e.Fixed.phi = geometricMean(e.Fixed.phi, e.Fixed.sigma)
+		e.Fixed.phi = rootSumSq(e.Fixed.phi, e.Fixed.sigma)
 		if e.Fixed.phi > startPhi {
 			e.Fixed.phi = startPhi
 		}
@@ -374,7 +374,7 @@ func (e *Estimated) fx(x float64) float64 {
 }
 
 // sqrt(x**2 + y**2)
-func geometricMean(x, y float64) float64 {
+func rootSumSq(x, y float64) float64 {
 	return math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2))
 }
 
