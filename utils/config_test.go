@@ -3,7 +3,7 @@ package utils_test
 import (
 	"testing"
 
-	"github.com/mashiike/golicko/utils"
+	"github.com/mashiike/rating"
 )
 
 func TestConfig_InititalVolatility(t *testing.T) {

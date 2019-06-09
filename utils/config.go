@@ -3,7 +3,7 @@ package utils
 import (
 	"time"
 
-	"github.com/mashiike/golicko/rating"
+	"github.com/mashiike/rating/rating"
 )
 
 //RatingPeriod constans

@@ -1,4 +1,4 @@
-module github.com/mashiike/golicko
+module github.com/mashiike/rating
 
 go 1.12
 

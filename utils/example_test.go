@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/mashiike/golicko/utils"
+	"github.com/mashiike/rating"
 )
 
 func ExampleMatch() {

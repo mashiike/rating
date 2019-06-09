@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mashiike/golicko/rating"
+	"github.com/mashiike/rating/rating"
 	"github.com/pkg/errors"
 )
 
