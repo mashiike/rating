@@ -251,10 +251,10 @@ type Estimated struct {
 	Tau float64 `json:"tau"`
 
 	//following variables tmp value for determine next sigma
-	a       float64 `json:"-"`
-	v       float64 `json:"-"`
-	sqDelta float64 `json:"-"`
-	sqPhi   float64 `json:"-"`
+	a       float64
+	v       float64
+	sqDelta float64
+	sqPhi   float64
 }
 
 //NewEstimated is initial estimated value constractor
