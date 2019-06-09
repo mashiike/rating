@@ -1,65 +1,72 @@
-package golicko_test
+package rating_test
 
 import (
 	"fmt"
-	"sort"
-	"time"
 
-	"github.com/mashiike/golicko"
+	"github.com/mashiike/rating"
 )
 
-func ExampleMatch() {
-	loc, _ := time.LoadLocation("Asia/Tokyo")
-	baseTime := time.Date(2019, 05, 01, 0, 0, 0, 0, loc)
-	config := golicko.NewConfig()
-	players := map[string]golicko.IPlayer{
-		"sheep":   golicko.NewPlayer(baseTime, config),
-		"goat":    golicko.NewPlayer(baseTime, config),
-		"donkey":  golicko.NewPlayer(baseTime, config),
-		"horse":   golicko.NewPlayer(baseTime, config),
-		"giraffe": golicko.NewPlayer(baseTime, config),
+func ExampleRating() {
+	player := rating.New(1500.0, 200.0, 0.06)
+	opponents := []rating.Rating{
+		rating.New(1400.0, 30.0, 0.06),
+		rating.New(1550.0, 100.0, 0.06),
+		rating.New(1700.0, 300.0, 0.06),
 	}
-
-	matches := []golicko.Match{
-		//1st week
-		{players["sheep"], players["goat"], nil, baseTime.Add(time.Hour)},
-		{players["sheep"], players["donkey"], players["sheep"], baseTime.Add(time.Hour)},
-		{players["donkey"], players["goat"], players["goat"], baseTime.Add(time.Hour)},
-		//2nd week
-		{players["giraffe"], players["goat"], players["giraffe"], baseTime.AddDate(0, 0, 7).Add(time.Hour)},
-		{players["giraffe"], players["horse"], players["giraffe"], baseTime.AddDate(0, 0, 7).Add(2.0 * time.Hour)},
-		{players["goat"], players["horse"], players["horse"], baseTime.AddDate(0, 0, 7).Add(3.0 * time.Hour)},
-		//3rd week
-		{players["giraffe"], players["sheep"], players["giraffe"], baseTime.AddDate(0, 0, 14).Add(time.Hour)},
-		{players["giraffe"], players["donkey"], players["giraffe"], baseTime.AddDate(0, 0, 14).Add(2.0 * time.Hour)},
-		{players["sheep"], players["horse"], players["sheep"], baseTime.AddDate(0, 0, 14).Add(3.0 * time.Hour)},
-		{players["donkey"], players["horse"], players["horse"], baseTime.AddDate(0, 0, 14).Add(3.0 * time.Hour)},
+	scores := []float64{
+		rating.ScoreWin,
+		rating.ScoreLose,
+		rating.ScoreLose,
 	}
-	for _, m := range matches {
-		if err := m.Apply(config); err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	//sort by rating
-	pairs := []struct {
-		name string
-		p    golicko.IPlayer
-	}{
-		{"sheep", players["sheep"]},
-		{"donkey", players["donkey"]},
-		{"goat", players["goat"]},
-		{"horse", players["horse"]},
-		{"giraffe", players["giraffe"]},
-	}
-	sort.Slice(pairs, func(i, j int) bool { return pairs[i].p.Rating().Strength() > (pairs[j].p.Rating()).Strength() })
-	for i, pair := range pairs {
-		fmt.Printf("%d. %s   \t:%s\n", i+1, pair.name, pair.p)
-	}
+	updated, _ := player.Update(opponents, scores, 0.5)
+	fmt.Println(updated)
+	fmt.Printf("strength  : %f\n", updated.Strength())
+	fmt.Printf("deviation : %f\n", updated.Deviation())
+	fmt.Printf("volatility: %f\n", updated.Volatility())
 	//Output:
-	//1. giraffe   	:2046.3p-357.0(4/0/0)
-	//2. sheep   	:1793.9p-323.9(2/1/1)
-	//3. horse   	:1603.5p-349.7(2/2/0)
-	//4. goat   	:1465.6p-362.9(1/2/1)
-	//5. donkey   	:949.6p-340.1(0/4/0)
+	//1464.0 (1161.0-1767.1 v=0.059996)
+	//strength  : 1464.050000
+	//deviation : 151.510000
+	//volatility: 0.059996
+}
+
+func ExampleEstimated_Rating() {
+	player := rating.New(1500.0, 200.0, 0.06)
+	opponents := []rating.Rating{
+		rating.New(1400.0, 30.0, 0.06),
+		rating.New(1550.0, 100.0, 0.06),
+		rating.New(1700.0, 300.0, 0.06),
+	}
+	scores := []float64{
+		rating.ScoreWin,
+		rating.ScoreLose,
+		rating.ScoreLose,
+	}
+	prev := player
+	e := rating.NewEstimated(prev, 0.5)
+	for i := 0; i < len(opponents); i++ {
+		e.ApplyMatch(opponents[i], scores[i])
+		updated := e.Rating()
+		fmt.Println(updated)
+		fmt.Printf("strength  diff : %f\n", updated.Strength()-prev.Strength())
+		fmt.Printf("deviation diff : %f\n", updated.Deviation()-prev.Deviation())
+		fmt.Println("---")
+		prev = updated
+	}
+	e.Fix()
+	fmt.Println(e.Fixed)
+	//Output:
+	//1563.6 (1212.8-1914.4 v=0.06)
+	//strength  diff : 63.560000
+	//deviation diff : -24.600000
+	//---
+	//1492.4 (1175.7-1809.1 v=0.06)
+	//strength  diff : -71.170000
+	//deviation diff : -17.070000
+	//---
+	//1464.0 (1161.0-1767.1 v=0.06)
+	//strength  diff : -28.340000
+	//deviation diff : -6.820000
+	//---
+	//1464.0 (1161.0-1767.1 v=0.059996)
 }

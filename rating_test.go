@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mashiike/golicko/rating"
+	"github.com/mashiike/rating"
 )
 
 func TestRatingCompare(t *testing.T) {

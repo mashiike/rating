@@ -3,7 +3,7 @@ package rating_test
 import (
 	"testing"
 
-	"github.com/mashiike/golicko/rating"
+	"github.com/mashiike/rating"
 )
 
 type ParseTest struct {
