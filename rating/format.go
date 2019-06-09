@@ -118,7 +118,7 @@ func parse(layout, value string, defaultVolatility float64) (Rating, error) {
 		case strength != 0.0 && upper != 0.0 && strength <= upper:
 			deviation = (upper - strength) / 4.0
 		default:
-			deviation = startDeviation
+			deviation = InitialDeviation
 		}
 	}
 	return New(strength, deviation, volatility), nil

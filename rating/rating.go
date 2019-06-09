@@ -12,14 +12,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+//Public Constant for rating value
+const (
+	InitialStrength  = 1500.0
+	InitialDeviation = 350.0
+)
+
 const (
 	//rating <=> glicko2 scale deviation convart rate
 	convartRate = 173.7178
 	//rating center value
 	centerValue = 1500.0
 	//start deviation
-	startDeviation = 350.0
-	startPhi       = startDeviation / convartRate
+	startPhi = InitialDeviation / convartRate
 	//x ~ N(0,1), this value is z when P(-z <= x <= z) = 0.95
 	zscore95 = 1.96
 
@@ -71,7 +76,7 @@ func New(strength, deviation, volatility float64) Rating {
 
 // Default is return default rating for starting Player/Team.
 func Default(volatility float64) Rating {
-	return New(centerValue, startDeviation, volatility)
+	return New(InitialStrength, InitialDeviation, volatility)
 }
 
 // Strength is return value of strength, as rating general value.
