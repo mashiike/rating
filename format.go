@@ -28,7 +28,7 @@ const (
 
 var errBad = errors.New("bad value for field")
 
-// ParseError describes a problem parsing a time string.
+// ParseError describes a problem parsing a rating string.
 type ParseError struct {
 	Layout     string
 	Value      string
@@ -233,7 +233,7 @@ func (r Rating) AppendFormat(b []byte, layout string) []byte {
 	return b
 }
 
-// Format returns a textual representation of the time value formatted
+// Format returns a textual representation of the rating value formatted
 // as same as time.Time
 func (r Rating) Format(layout string) string {
 	const bufSize = 64
