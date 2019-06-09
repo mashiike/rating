@@ -129,3 +129,11 @@ func TestMarshalJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultWithCompute(t *testing.T) {
+	r := rating.DefaultWithCompute(50.0, 350.0, 100.0)
+	expected := 0.199409
+	if r.Volatility() != expected {
+		t.Errorf("rating.ComputeInitialVolatility got %v, expected %v", r.Volatility(), expected)
+	}
+}

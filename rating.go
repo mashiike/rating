@@ -77,6 +77,20 @@ func New(strength, deviation, volatility float64) Rating {
 	}
 }
 
+//DefaultWithCompute is utils constractor.
+//start and end is deviation. count is rating period count.
+//Compute volatility from the condition of how many non-match period (Rating Period) from start to end
+func DefaultWithCompute(start, end, count float64) Rating {
+	return Default(
+		nthFloor(
+			math.Sqrt(
+				(math.Pow(end/convartRate, 2)-math.Pow(start/convartRate, 2))/count,
+			),
+			6,
+		),
+	)
+}
+
 // Default is return default rating for starting Player/Team.
 func Default(volatility float64) Rating {
 	return New(InitialStrength, InitialDeviation, volatility)
