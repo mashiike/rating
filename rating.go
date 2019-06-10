@@ -91,6 +91,25 @@ func DefaultWithCompute(start, end, count float64) Rating {
 	)
 }
 
+//Average returns the average strength of multiple Ratings
+func Average(ratings []Rating) Rating {
+	totalMu := 0.0
+	totalSqPhi := 0.0
+	totalSigma := 0.0
+	length := float64(len(ratings))
+	sqLen := math.Pow(length, 2)
+	for _, r := range ratings {
+		totalMu += r.mu
+		totalSqPhi += math.Pow(r.phi, 2)
+		totalSigma += r.sigma
+	}
+	return Rating{
+		mu:    totalMu / length,
+		phi:   math.Sqrt(totalSqPhi / sqLen),
+		sigma: totalSigma / length,
+	}
+}
+
 // Default is return default rating for starting Player/Team.
 func Default(volatility float64) Rating {
 	return New(InitialStrength, InitialDeviation, volatility)
