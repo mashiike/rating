@@ -140,7 +140,7 @@ func (r Rating) Interval() (float64, float64) {
 //IsDifferent is a function to check the significance of Rating
 func (r Rating) IsDifferent(o Rating) bool {
 	y := r.mu - o.mu
-	z := y / rootSumSq(r.phi, o.phi)
+	z := y / math.Hypot(r.phi, o.phi)
 	if math.Abs(z) > zscore95 {
 		return true
 	}
@@ -166,7 +166,7 @@ func (r Rating) IsWeeker(o Rating) bool {
 // WinProb is estimate winning probability,
 // this value 1500 and 1700, both RD is 0 => P(1700 is win) = 0.76
 func (r Rating) WinProb(o Rating) float64 {
-	return nthFloor(fE(r.mu, o.mu, rootSumSq(r.phi, o.phi)), 4)
+	return nthFloor(fE(r.mu, o.mu, math.Hypot(r.phi, o.phi)), 4)
 }
 
 func float64ToByte(float float64) []byte {
@@ -325,7 +325,7 @@ func (e *Estimated) Rating() Rating {
 }
 
 func (e *Estimated) computeRating(sigmaDash float64) Rating {
-	phiAsta := rootSumSq(e.Fixed.phi, sigmaDash)
+	phiAsta := math.Hypot(e.Fixed.phi, sigmaDash)
 	phiDash := 1.0 / math.Sqrt(1.0/(math.Pow(phiAsta, 2))+e.Accuracy)
 	if phiDash > startPhi {
 		phiDash = startPhi
@@ -347,7 +347,7 @@ func (e *Estimated) Fix() error {
 	if e.Accuracy == 0.0 {
 		// if estimated accuracy is zero, can not apply. because maybe no matches.
 		// In this case, rating value and volatility parameters remain the same, but the rating deviation increases
-		e.Fixed.phi = rootSumSq(e.Fixed.phi, e.Fixed.sigma)
+		e.Fixed.phi = math.Hypot(e.Fixed.phi, e.Fixed.sigma)
 		if e.Fixed.phi > startPhi {
 			e.Fixed.phi = startPhi
 		}
@@ -410,11 +410,6 @@ func (e *Estimated) fx(x float64) float64 {
 	firstTerm := (math.Exp(x) * (diffVal - math.Exp(x))) / (2 * sumVal * sumVal)
 	secondTerm := (x - e.a) / (math.Pow(e.Tau, 2))
 	return firstTerm - secondTerm
-}
-
-// sqrt(x**2 + y**2)
-func rootSumSq(x, y float64) float64 {
-	return math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2))
 }
 
 // Truncate at n decimal places
