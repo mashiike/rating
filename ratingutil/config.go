@@ -6,7 +6,7 @@ import (
 	"github.com/mashiike/rating"
 )
 
-//RatingPeriod constans
+//RatingPeriod constants
 //can multiple float64
 //  PeriodDay * 3.0  => 3 days
 const (
