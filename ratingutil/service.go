@@ -58,7 +58,8 @@ func (s *Service) NewMatch(elements ...Element) (*Match, error) {
 		scores[element] = 0.0
 	}
 	return &Match{
-		scores: scores,
+		scores:        scores,
+		applyStrategy: s.Config.DefaultApplyStrategy,
 	}, nil
 }
 

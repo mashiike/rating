@@ -42,6 +42,9 @@ type Config struct {
 	//This period is a guideline, and the time to return to the actual initial deviation is determined by the player's Volatility here.
 	//And initial Volatility is calculated based on this period.
 	PeriodToResetDeviation time.Duration
+
+	//Fighting prosperity strategy uses round robin by default
+	DefaultApplyStrategy ApplyStrategy
 }
 
 //NewConfig is default configuration
@@ -51,6 +54,7 @@ func NewConfig() *Config {
 		RatingPeriod:           PeriodWeek,
 		PeriodToResetDeviation: PeriodYear,
 		Tau:                    0.5,
+		DefaultApplyStrategy:   AsRoundrobin,
 	}
 }
 
@@ -69,9 +73,19 @@ func (c *Config) WithClock(clock Clock) *Config {
 //WithRatingPeriod is set RatingPeriod to config
 func (c *Config) WithRatingPeriod(period time.Duration) *Config {
 	c.RatingPeriod = period
+	return c
 }
 
 //WithTau is set Tau to config
 func (c *Config) WithTau(tau float64) *Config {
 	c.Tau = tau
+	return c
+}
+
+//WithApplyStrategy is set DefaultApplyStrategy to config
+func (c *Config) WithApplyStrategy(strategy ApplyStrategy) *Config {
+	if strategy != nil {
+		c.DefaultApplyStrategy = strategy
+	}
+	return c
 }

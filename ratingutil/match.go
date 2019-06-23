@@ -9,9 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+//ApplyStrategy is an alias for a function.
+//This function shows how to reflect in a multiplayer game when reflecting the result of Match in Rating.
+type ApplyStrategy func(map[Element]rating.Rating, map[Element]float64) error
+
 //Match is a model that represents multiple Team / Player battles
 type Match struct {
-	scores map[Element]float64
+	scores        map[Element]float64
+	applyStrategy ApplyStrategy
 }
 
 //Add function adds a Score.
@@ -50,32 +55,16 @@ func (m *Match) Ratings() map[Element]rating.Rating {
 
 //Apply function determines the current score and reflects it on Team / Player's Rating.
 func (m *Match) Apply(scoresAt time.Time, config *Config) error {
-	for target := range m.scores {
+	scores := make(map[Element]float64, len(m.scores))
+	for target, score := range m.scores {
 		if err := target.Prepare(scoresAt, config); err != nil {
 			return errors.Wrapf(err, "failed prepare %v", target.Name())
 		}
+		scores[target] = score
 	}
 	ratings := m.Ratings()
-	for target, score1 := range m.scores {
-		for opponent, score2 := range m.scores {
-			if target == opponent {
-				continue
-			}
-
-			score := rating.ScoreLose
-			if score1 > score2 {
-				score = rating.ScoreWin
-			}
-			if score1 == score2 {
-				score = rating.ScoreDraw
-			}
-			if err := target.ApplyMatch(ratings[opponent], score); err != nil {
-				return errors.Wrapf(err, "failed apply %v vs %v", target.Name(), opponent.Name())
-			}
-		}
-	}
 	m.Reset()
-	return nil
+	return m.applyStrategy(ratings, scores)
 }
 
 //WinProbs returns the probability that each Team / Player will be first
@@ -106,4 +95,27 @@ func (m *Match) String() string {
 		str += fmt.Sprintf(" %s(%0.2f) ", elem, probs[elem])
 	}
 	return str + "]"
+}
+
+//AsRoundrobin considers Multiplayer Matches to be a round-trip tournament ApplyStrategy
+func AsRoundrobin(ratings map[Element]rating.Rating, scores map[Element]float64) error {
+	for target, score1 := range scores {
+		for opponent, score2 := range scores {
+			if target == opponent {
+				continue
+			}
+
+			score := rating.ScoreLose
+			if score1 > score2 {
+				score = rating.ScoreWin
+			}
+			if score1 == score2 {
+				score = rating.ScoreDraw
+			}
+			if err := target.ApplyMatch(ratings[opponent], score); err != nil {
+				return errors.Wrapf(err, "failed apply %v vs %v", target.Name(), opponent.Name())
+			}
+		}
+	}
+	return nil
 }
