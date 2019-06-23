@@ -59,3 +59,19 @@ func (c *Config) InitialVolatility() float64 {
 	count := c.PeriodToResetDeviation.Seconds() / c.RatingPeriod.Seconds()
 	return rating.NewVolatility(50.0, count)
 }
+
+//WithClock is set clock to config
+func (c *Config) WithClock(clock Clock) *Config {
+	c.Clock = clock
+	return c
+}
+
+//WithRatingPeriod is set RatingPeriod to config
+func (c *Config) WithRatingPeriod(period time.Duration) *Config {
+	c.RatingPeriod = period
+}
+
+//WithTau is set Tau to config
+func (c *Config) WithTau(tau float64) *Config {
+	c.Tau = tau
+}
