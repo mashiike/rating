@@ -138,7 +138,7 @@ func TestNewVolatility(t *testing.T) {
 		expected float64
 	}{
 		{"normal", 50.0, 100.0, 0.199409},
-		{"zero", 50.0, 0.0, 63.712364},
+		{"zero", 50.0, 0.0, 2.014761},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
