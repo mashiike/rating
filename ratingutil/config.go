@@ -55,6 +55,5 @@ func NewConfig() *Config {
 
 func (c *Config) InitialVolatility() float64 {
 	count := c.PeriodToResetDeviation.Seconds() / c.RatingPeriod.Seconds()
-	r := rating.DefaultWithCompute(50.0, rating.InitialDeviation, count)
-	return r.Volatility()
+	return rating.NewVolatility(50.0, count)
 }

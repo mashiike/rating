@@ -130,11 +130,23 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
-func TestDefaultWithCompute(t *testing.T) {
-	r := rating.DefaultWithCompute(50.0, 350.0, 100.0)
-	expected := 0.199409
-	if r.Volatility() != expected {
-		t.Errorf("rating.ComputeInitialVolatility got %v, expected %v", r.Volatility(), expected)
+func TestNewVolatility(t *testing.T) {
+	cases := []struct {
+		name     string
+		start    float64
+		count    float64
+		expected float64
+	}{
+		{"normal", 50.0, 100.0, 0.199409},
+		{"zero", 50.0, 0.0, 63.712364},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := rating.NewVolatility(c.start, c.count)
+			if got != c.expected {
+				t.Errorf("rating.NewVolatility got %v, expected %v", got, c.expected)
+			}
+		})
 	}
 }
 

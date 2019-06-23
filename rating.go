@@ -68,6 +68,24 @@ type Rating struct {
 	sigma float64
 }
 
+//NewVolatility is a helper for determining Volatility.
+//Calculate the appropriate value by entering the number of rating periods required to get back to the start deviation and the initial deviation
+func NewVolatility(start, count float64) float64 {
+	if count <= 0 {
+		//Note: If count is 0 or less
+		// if there is a non-match rating period,
+		// it is considered to be set with the intention of returning to the initial deviation immediately.
+		return NewVolatility(0.0, 0.001)
+	}
+
+	return nthFloor(
+		math.Sqrt(
+			(math.Pow(startPhi, 2)-math.Pow(start/convartRate, 2))/count,
+		),
+		6,
+	)
+}
+
 //New is a constractor for Rating
 func New(strength, deviation, volatility float64) Rating {
 	return Rating{
@@ -75,20 +93,6 @@ func New(strength, deviation, volatility float64) Rating {
 		phi:   deviation / convartRate,
 		sigma: volatility,
 	}
-}
-
-//DefaultWithCompute is utils constractor.
-//start and end is deviation. count is rating period count.
-//Compute volatility from the condition of how many non-match period (Rating Period) from start to end
-func DefaultWithCompute(start, end, count float64) Rating {
-	return Default(
-		nthFloor(
-			math.Sqrt(
-				(math.Pow(end/convartRate, 2)-math.Pow(start/convartRate, 2))/count,
-			),
-			6,
-		),
-	)
 }
 
 //Average returns the average strength of multiple Ratings
