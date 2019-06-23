@@ -46,16 +46,17 @@ func (s *Service) NewTeam(name string, members Players) *Team {
 	}
 }
 
+//NewMatch creates a new Match model from a given Team / Player
 func (s *Service) NewMatch(elements ...Element) (*Match, error) {
 	if len(elements) < 2 {
 		return nil, errors.New("two or more elements are required for the match")
 	}
-	outcome := make(map[Element]float64, len(elements))
+	scores := make(map[Element]float64, len(elements))
 	for _, element := range elements {
-		outcome[element] = 0.0
+		scores[element] = 0.0
 	}
 	return &Match{
-		outcome: outcome,
+		scores: scores,
 	}, nil
 }
 

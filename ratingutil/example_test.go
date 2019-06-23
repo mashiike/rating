@@ -35,26 +35,19 @@ func ExampleService() {
 	)
 	match, _ := svc.NewMatch(team1, team2)
 
-	fmt.Println(team1)
-	fmt.Println(team2)
-	fmt.Printf("== %s win %% = %f ==\n", team1.Name(), team1.Rating().WinProb(team2.Rating()))
-
-	match.AddScore(team1, 1.0)
-	match.AddScore(team2, 0.0)
+	fmt.Println(match)
+	match.Add(team1, 1.0)
+	match.Add(team2, 0.0)
 	err := svc.Apply(match)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	fmt.Println(team1)
-	fmt.Println(team2)
-	fmt.Printf("== %s win %% = %f ==\n", team1.Name(), team1.Rating().WinProb(team2.Rating()))
+	fmt.Println("=== after match ===")
+	fmt.Println(match)
 
 	//Output:
-	//bovidae:{ sheep:1700.0p-138.6 goat:1500.0p-700.0 }
-	//equidae:{ donkey:1400.0p-138.6 zebra:1500.0p-700.0 }
-	//== bovidae win % = 0.662400 ==
-	//bovidae:{ sheep:1705.2p-137.2 goat:1654.5p-530.9 }
-	//equidae:{ donkey:1393.7p-137.0 zebra:1364.1p-536.3 }
-	//== bovidae win % = 0.813600 ==
+	//[ bovidae:{ sheep:1700.0p-138.6 goat:1500.0p-700.0 }(0.66)  equidae:{ donkey:1400.0p-138.6 zebra:1500.0p-700.0 }(0.34) ]
+	//=== after match ===
+	//[ bovidae:{ sheep:1705.2p-137.2 goat:1654.5p-530.9 }(0.81)  equidae:{ donkey:1393.7p-137.0 zebra:1364.1p-536.3 }(0.19) ]
 
 }
