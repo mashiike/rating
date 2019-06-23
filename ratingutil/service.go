@@ -39,48 +39,32 @@ func (s *Service) NewDefaultPlayer(name string) *Player {
 type Players []*Player
 
 //NewTeam is constractor of *Team
-func (s *Service) NewTeam(name string, members []*Player) *Team {
+func (s *Service) NewTeam(name string, members Players) *Team {
 	return &Team{
 		name:    name,
 		members: members,
 	}
 }
 
-type Outcome map[Element]float64
-
-//ApplyMatchWithTime is a function for apply Match for Team/Player outcome.
-func (s *Service) ApplyMatchWithTime(outcome Outcome, outcomeAt time.Time) error {
-
-	opponents := make(map[Element]rating.Rating, len(outcome))
-	for target, _ := range outcome {
-		if err := target.Prepare(s.Config.RatingPeriod, outcomeAt); err != nil {
-			return errors.Wrapf(err, "failed prepare %v", target.Name())
-		}
-		opponents[target] = target.Rating()
+func (s *Service) NewMatch(elements ...Element) (*Match, error) {
+	if len(elements) < 2 {
+		return nil, errors.New("two or more elements are required for the match")
 	}
-
-	for target, result1 := range outcome {
-		for opponent, result2 := range outcome {
-			if target == opponent {
-				continue
-			}
-
-			score := rating.ScoreLose
-			if result1 > result2 {
-				score = rating.ScoreWin
-			}
-			if result1 == result2 {
-				score = rating.ScoreDraw
-			}
-			if err := target.ApplyMatch(opponents[opponent], score); err != nil {
-				return errors.Wrapf(err, "failed apply %v vs %v", target.Name(), opponent.Name())
-			}
-		}
+	outcome := make(map[Element]float64, len(elements))
+	for _, element := range elements {
+		outcome[element] = 0.0
 	}
-	return nil
+	return &Match{
+		outcome: outcome,
+	}, nil
 }
 
-//ApplyMatch is a function for apply Match for Team/Player outcome.
-func (s *Service) ApplyMatch(outcome Outcome) error {
-	return s.ApplyMatchWithTime(outcome, s.Config.Now())
+//ApplyWithTime is a function for apply Match for Team/Player outcome.
+func (s *Service) ApplyWithTime(match *Match, outcomeAt time.Time) error {
+	return match.Apply(outcomeAt, s.Config)
+}
+
+//Apply is a function for apply Match for Team/Player outcome.
+func (s *Service) Apply(match *Match) error {
+	return s.ApplyWithTime(match, s.Config.Now())
 }

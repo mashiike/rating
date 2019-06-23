@@ -33,11 +33,15 @@ func ExampleService() {
 			svc.NewDefaultPlayer("zebra"),
 		},
 	)
+	match, _ := svc.NewMatch(team1, team2)
 
 	fmt.Println(team1)
 	fmt.Println(team2)
 	fmt.Printf("== %s win %% = %f ==\n", team1.Name(), team1.Rating().WinProb(team2.Rating()))
-	err := svc.ApplyMatch(ratingutil.Outcome{team1: 1.0, team2: 0.0})
+
+	match.AddScore(team1, 1.0)
+	match.AddScore(team2, 0.0)
+	err := svc.Apply(match)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
