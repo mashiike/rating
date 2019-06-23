@@ -13,7 +13,7 @@ type Element interface {
 	Name() string
 	Rating() rating.Rating
 	ApplyMatch(rating.Rating, float64) error
-	Prepare(time.Duration, time.Time) error
+	Prepare(time.Time, *Config) error
 }
 
 //Player is rating resouse
@@ -32,13 +32,12 @@ func (p *Player) ApplyMatch(opponent rating.Rating, score float64) error {
 	return p.estimated.ApplyMatch(opponent, score)
 }
 
-func (p *Player) Prepare(period time.Duration, outcomeAt time.Time) error {
-	for outcomeAt.Sub(p.fixedAt) > period {
-		if err := p.estimated.Fix(); err != nil {
+func (p *Player) Prepare(outcomeAt time.Time, config *Config) error {
+	for outcomeAt.Sub(p.fixedAt) > config.RatingPeriod {
+		if err := p.estimated.Fix(config.Tau); err != nil {
 			return err
 		}
-		p.fixedAt = p.fixedAt.Add(period)
-		p.estimated = rating.NewEstimated(p.estimated.Fixed, p.estimated.Tau)
+		p.fixedAt = p.fixedAt.Add(config.RatingPeriod)
 	}
 	return nil
 }
@@ -74,9 +73,9 @@ func (t *Team) ApplyMatch(opponent rating.Rating, score float64) error {
 	return nil
 }
 
-func (t *Team) Prepare(period time.Duration, outcomeAt time.Time) error {
+func (t *Team) Prepare(outcomeAt time.Time, config *Config) error {
 	for _, member := range t.members {
-		if err := member.Prepare(period, outcomeAt); err != nil {
+		if err := member.Prepare(outcomeAt, config); err != nil {
 			return errors.Wrapf(err, "prepare %v", member)
 		}
 	}

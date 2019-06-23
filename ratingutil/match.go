@@ -35,7 +35,7 @@ func (m *Match) Ratings() map[string]rating.Rating {
 
 func (m *Match) Apply(outcomeAt time.Time, config *Config) error {
 	for target, _ := range m.outcome {
-		if err := target.Prepare(config.RatingPeriod, outcomeAt); err != nil {
+		if err := target.Prepare(outcomeAt, config); err != nil {
 			return errors.Wrapf(err, "failed prepare %v", target.Name())
 		}
 	}

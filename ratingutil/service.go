@@ -22,7 +22,7 @@ func New(config *Config) *Service {
 func (s *Service) NewPlayer(name string, fixed rating.Rating, fixedAt time.Time) *Player {
 	return &Player{
 		name:      name,
-		estimated: rating.NewEstimated(fixed, s.Config.Tau),
+		estimated: rating.NewEstimated(fixed),
 		fixedAt:   fixedAt.Truncate(s.Config.RatingPeriod),
 	}
 }

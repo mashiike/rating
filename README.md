@@ -36,11 +36,11 @@ Then save the information in a database or file system etc.
 
 ```go
 player := rating.New(1500.0, 200.0, 0.06)
-e := rating.NewEstimated(r, 0.5)
+e := rating.NewEstimated(r)
 opponent := rating.New(1400.0, 30.0, 0.06)
 err := e.ApplyMatch(opponent, rating.ScoreWin)
 //when the rating period is over
-err = e.Fix()
+err = e.Fix(0.5)
 updated := e.Fixed
 ```
 
