@@ -1,34 +1,43 @@
-package ratingsvc_test
+package ratingutil_test
 
 import (
 	"fmt"
 
 	"github.com/mashiike/rating"
-	"github.com/mashiike/rating/ratingsvc"
+	"github.com/mashiike/rating/ratingutil"
 )
 
 func ExampleService() {
 
 	//for example, Tag battle
-	svc := ratingsvc.New(ratingsvc.NewConfig())
+	svc := ratingutil.New(ratingutil.NewConfig())
 	team1 := svc.NewTeam(
 		"bovidae",
-		ratingsvc.Players{
-			svc.NewPlayer("sheep", rating.New(1700.0, 50.0, svc.Config.InitialVolatility()), svc.Config.Now()),
+		ratingutil.Players{
+			svc.NewPlayer(
+				"sheep",
+				rating.New(1700.0, 50.0, svc.Config.InitialVolatility()),
+				svc.Config.Now(),
+			),
 			svc.NewDefaultPlayer("goat"),
 		},
 	)
 	team2 := svc.NewTeam(
 		"equidae",
-		ratingsvc.Players{
-			svc.NewPlayer("donkey", rating.New(1400.0, 50.0, svc.Config.InitialVolatility()), svc.Config.Now()),
+		ratingutil.Players{
+			svc.NewPlayer(
+				"donkey",
+				rating.New(1400.0, 50.0, svc.Config.InitialVolatility()),
+				svc.Config.Now(),
+			),
 			svc.NewDefaultPlayer("zebra"),
 		},
 	)
+
 	fmt.Println(team1)
 	fmt.Println(team2)
 	fmt.Printf("== %s win %% = %f ==\n", team1.Name(), team1.Rating().WinProb(team2.Rating()))
-	err := svc.ApplyMatch(ratingsvc.Outcome{team1: 1.0, team2: 0.0})
+	err := svc.ApplyMatch(ratingutil.Outcome{team1: 1.0, team2: 0.0})
 	if err != nil {
 		fmt.Println(err.Error())
 	}

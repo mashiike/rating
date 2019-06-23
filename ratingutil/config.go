@@ -1,4 +1,4 @@
-package ratingsvc
+package ratingutil
 
 import (
 	"time"
