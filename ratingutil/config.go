@@ -16,6 +16,7 @@ const (
 	PeriodYear                = 365 * PeriodDay
 )
 
+//Clock is a clock used in this package. The default is to use time.Now()
 type Clock interface {
 	Now() time.Time
 }
@@ -53,6 +54,7 @@ func NewConfig() *Config {
 	}
 }
 
+//InitialVolatility calculates the initial rating fluctuation according to the setting
 func (c *Config) InitialVolatility() float64 {
 	count := c.PeriodToResetDeviation.Seconds() / c.RatingPeriod.Seconds()
 	return rating.NewVolatility(50.0, count)

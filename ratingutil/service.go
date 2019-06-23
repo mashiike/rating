@@ -12,6 +12,7 @@ type Service struct {
 	*Config
 }
 
+//New creates a service class for this package.
 func New(config *Config) *Service {
 	return &Service{
 		Config: config,
@@ -36,6 +37,7 @@ func (s *Service) NewDefaultPlayer(name string) *Player {
 	)
 }
 
+//Players is an array of players
 type Players []*Player
 
 //NewTeam is constractor of *Team

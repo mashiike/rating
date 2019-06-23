@@ -28,10 +28,12 @@ func (p *Player) Name() string {
 	return p.name
 }
 
+//ApplyMatch reflects match results between players.
 func (p *Player) ApplyMatch(opponent rating.Rating, score float64) error {
 	return p.estimated.ApplyMatch(opponent, score)
 }
 
+//Prepare does the work before operating the player according to the configs
 func (p *Player) Prepare(outcomeAt time.Time, config *Config) error {
 	for outcomeAt.Sub(p.fixedAt) > config.RatingPeriod {
 		if err := p.estimated.Fix(config.Tau); err != nil {
@@ -42,6 +44,7 @@ func (p *Player) Prepare(outcomeAt time.Time, config *Config) error {
 	return nil
 }
 
+//Rating returns the estimated strength of the current player
 func (p *Player) Rating() rating.Rating {
 	return p.estimated.Rating()
 }
@@ -73,6 +76,7 @@ func (t *Team) ApplyMatch(opponent rating.Rating, score float64) error {
 	return nil
 }
 
+//Prepare does the work before operating the team according to the configs
 func (t *Team) Prepare(outcomeAt time.Time, config *Config) error {
 	for _, member := range t.members {
 		if err := member.Prepare(outcomeAt, config); err != nil {
