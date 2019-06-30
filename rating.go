@@ -68,6 +68,25 @@ type Rating struct {
 	sigma float64
 }
 
+//NewVolatility is a helper for determining Volatility.
+//Calculate the appropriate value by entering the number of rating periods required to get back to the start deviation and the initial deviation
+func NewVolatility(start, count float64) float64 {
+	if count <= 0 {
+		//Note: If count is 0 or less
+		// if there is a non-match rating period,
+		// it is considered to be set with the intention of returning to the initial deviation immediately.
+		// So, the deviation is 0 and the required period is 1.0
+		return NewVolatility(0.0, 1.0)
+	}
+
+	return nthFloor(
+		math.Sqrt(
+			(math.Pow(startPhi, 2)-math.Pow(start/convartRate, 2))/count,
+		),
+		6,
+	)
+}
+
 //New is a constractor for Rating
 func New(strength, deviation, volatility float64) Rating {
 	return Rating{
@@ -77,18 +96,23 @@ func New(strength, deviation, volatility float64) Rating {
 	}
 }
 
-//DefaultWithCompute is utils constractor.
-//start and end is deviation. count is rating period count.
-//Compute volatility from the condition of how many non-match period (Rating Period) from start to end
-func DefaultWithCompute(start, end, count float64) Rating {
-	return Default(
-		nthFloor(
-			math.Sqrt(
-				(math.Pow(end/convartRate, 2)-math.Pow(start/convartRate, 2))/count,
-			),
-			6,
-		),
-	)
+//Average returns the average strength of multiple Ratings
+func Average(ratings []Rating) Rating {
+	totalMu := 0.0
+	totalSqPhi := 0.0
+	totalSigma := 0.0
+	length := float64(len(ratings))
+	sqLen := math.Pow(length, 2)
+	for _, r := range ratings {
+		totalMu += r.mu
+		totalSqPhi += math.Pow(r.phi, 2)
+		totalSigma += r.sigma
+	}
+	return Rating{
+		mu:    totalMu / length,
+		phi:   math.Sqrt(totalSqPhi / sqLen),
+		sigma: totalSigma / length,
+	}
 }
 
 // Default is return default rating for starting Player/Team.
@@ -121,7 +145,7 @@ func (r Rating) Interval() (float64, float64) {
 //IsDifferent is a function to check the significance of Rating
 func (r Rating) IsDifferent(o Rating) bool {
 	y := r.mu - o.mu
-	z := y / rootSumSq(r.phi, o.phi)
+	z := y / math.Hypot(r.phi, o.phi)
 	if math.Abs(z) > zscore95 {
 		return true
 	}
@@ -147,7 +171,7 @@ func (r Rating) IsWeeker(o Rating) bool {
 // WinProb is estimate winning probability,
 // this value 1500 and 1700, both RD is 0 => P(1700 is win) = 0.76
 func (r Rating) WinProb(o Rating) float64 {
-	return nthFloor(fE(r.mu, o.mu, rootSumSq(r.phi, o.phi)), 4)
+	return nthFloor(fE(r.mu, o.mu, math.Hypot(r.phi, o.phi)), 4)
 }
 
 func float64ToByte(float float64) []byte {
@@ -238,13 +262,13 @@ func (r Rating) Update(opponents []Rating, scores []float64, tau float64) (Ratin
 	if len(opponents) != len(scores) {
 		return r, errors.New("opponents and scores length missmatch")
 	}
-	e := NewEstimated(r, tau)
+	e := NewEstimated(r)
 	for i := 0; i < len(opponents); i++ {
 		if err := e.ApplyMatch(opponents[i], scores[i]); err != nil {
 			return r, err
 		}
 	}
-	if err := e.Fix(); err != nil {
+	if err := e.Fix(tau); err != nil {
 		return r, err
 	}
 	return e.Fixed, nil
@@ -254,33 +278,20 @@ func (r Rating) Update(opponents []Rating, scores []float64, tau float64) (Ratin
 // If you update the rating sequentially, use this struct to save the learning process during the current rating period.
 type Estimated struct {
 	sync.Mutex
-
 	// in ref[1], this value is v^-1
 	Accuracy float64 `json:"accuracy"`
 	// in ref[1], this value is delta
 	Improvement float64 `json:"improvement"`
 	// base fixed rating
 	Fixed Rating `json:"fixed"`
-	// system parameter tau. this value for determine next volatility.
-	// in ref[1] p.1:
-	// "Reasonable choices are between 0.3 and 1.2,
-	// though the system should be tested to decide which value results in greatest predictive accuracy. "
-	Tau float64 `json:"tau"`
-
-	//following variables tmp value for determine next sigma
-	a       float64
-	v       float64
-	sqDelta float64
-	sqPhi   float64
 }
 
 //NewEstimated is initial estimated value constractor
-func NewEstimated(rating Rating, tau float64) *Estimated {
+func NewEstimated(rating Rating) *Estimated {
 	return &Estimated{
 		Accuracy:    0.0,
 		Improvement: 0.0,
 		Fixed:       rating,
-		Tau:         tau,
 	}
 }
 
@@ -306,7 +317,7 @@ func (e *Estimated) Rating() Rating {
 }
 
 func (e *Estimated) computeRating(sigmaDash float64) Rating {
-	phiAsta := rootSumSq(e.Fixed.phi, sigmaDash)
+	phiAsta := math.Hypot(e.Fixed.phi, sigmaDash)
 	phiDash := 1.0 / math.Sqrt(1.0/(math.Pow(phiAsta, 2))+e.Accuracy)
 	if phiDash > startPhi {
 		phiDash = startPhi
@@ -319,58 +330,72 @@ func (e *Estimated) computeRating(sigmaDash float64) Rating {
 }
 
 // Fix ends the rating period and determines the new rating.
-func (e *Estimated) Fix() error {
+// system parameter tau. this value for determine next volatility.
+// in ref[1] p.1:
+// "Reasonable choices are between 0.3 and 1.2,
+// though the system should be tested to decide which value results in greatest predictive accuracy. "
+func (e *Estimated) Fix(tau float64) error {
 	e.Lock()
 	defer e.Unlock()
-	if e.Tau <= 0 {
+	if tau <= 0 {
 		return errors.New("tau must be a nonzero positive number")
 	}
 	if e.Accuracy == 0.0 {
 		// if estimated accuracy is zero, can not apply. because maybe no matches.
 		// In this case, rating value and volatility parameters remain the same, but the rating deviation increases
-		e.Fixed.phi = rootSumSq(e.Fixed.phi, e.Fixed.sigma)
+		e.Fixed.phi = math.Hypot(e.Fixed.phi, e.Fixed.sigma)
 		if e.Fixed.phi > startPhi {
 			e.Fixed.phi = startPhi
 		}
 		return nil
 	}
-	sigmaDash := e.determineSigma()
-	e.Fixed = e.computeRating(sigmaDash)
+	alg := &illinois{
+		tau: tau,
+	}
+	e.Fixed = e.computeRating(alg.Do(e))
 	return nil
 }
 
-func (e *Estimated) determineSigma() float64 {
-	e.a = math.Log(math.Pow(e.Fixed.sigma, 2))
-	A := e.a
+type illinois struct {
+	tau     float64
+	a       float64
+	v       float64
+	sqDelta float64
+	sqPhi   float64
+}
+
+func (alg *illinois) Do(e *Estimated) float64 {
+	alg.a = math.Log(math.Pow(e.Fixed.sigma, 2))
+	A := alg.a
 	B := 0.0
 
-	e.sqDelta = math.Pow(e.Improvement, 2)
-	e.sqPhi = math.Pow(e.Fixed.phi, 2)
-	e.v = 1.0 / e.Accuracy
+	alg.sqDelta = math.Pow(e.Improvement, 2)
+	alg.sqPhi = math.Pow(e.Fixed.phi, 2)
+	alg.v = 1.0 / e.Accuracy
 
 	switch {
-	case e.sqDelta > e.sqPhi+e.v:
-		B = math.Log(e.sqDelta - e.sqPhi - e.v)
+	case alg.sqDelta > alg.sqPhi+alg.v:
+		B = math.Log(alg.sqDelta - alg.sqPhi - alg.v)
 	default:
 		valf := 0.0
 		for k := 1; k < iterationLimit+1; k++ {
-			B = (e.a - float64(k)*e.Tau)
-			valf = e.fx(B)
+			B = (alg.a - float64(k)*alg.tau)
+			valf = alg.fx(B)
 			if valf >= 0.0 {
 				break
 			}
 		}
 	}
 
-	valfA := e.fx(A)
-	valfB := e.fx(B)
+	valfA := alg.fx(A)
+	valfB := alg.fx(B)
 
 	for i := 0; i < iterationLimit; i++ {
 		if math.Abs(B-A) <= epsiron {
 			break
 		}
 		C := A + ((A-B)*valfA)/(valfB-valfA)
-		valfC := e.fx(C)
+		valfC := alg.fx(C)
 		switch {
 		case valfB*valfC < 0.0:
 			A = B
@@ -385,17 +410,12 @@ func (e *Estimated) determineSigma() float64 {
 	return math.Exp(A / 2.0)
 }
 
-func (e *Estimated) fx(x float64) float64 {
-	sumVal := e.sqDelta + e.sqPhi + e.v
-	diffVal := e.sqDelta - e.sqPhi - e.v
+func (alg *illinois) fx(x float64) float64 {
+	sumVal := alg.sqDelta + alg.sqPhi + alg.v
+	diffVal := alg.sqDelta - alg.sqPhi - alg.v
 	firstTerm := (math.Exp(x) * (diffVal - math.Exp(x))) / (2 * sumVal * sumVal)
-	secondTerm := (x - e.a) / (math.Pow(e.Tau, 2))
+	secondTerm := (x - alg.a) / (math.Pow(alg.tau, 2))
 	return firstTerm - secondTerm
-}
-
-// sqrt(x**2 + y**2)
-func rootSumSq(x, y float64) float64 {
-	return math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2))
 }
 
 // Truncate at n decimal places

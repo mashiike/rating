@@ -43,7 +43,7 @@ func ExampleEstimated_Rating() {
 		rating.ScoreLose,
 	}
 	prev := player
-	e := rating.NewEstimated(prev, 0.5)
+	e := rating.NewEstimated(prev)
 	for i := 0; i < len(opponents); i++ {
 		e.ApplyMatch(opponents[i], scores[i])
 		updated := e.Rating()
@@ -53,7 +53,7 @@ func ExampleEstimated_Rating() {
 		fmt.Println("---")
 		prev = updated
 	}
-	e.Fix()
+	e.Fix(0.5)
 	fmt.Println(e.Fixed)
 	//Output:
 	//1563.6 (1212.8-1914.4 v=0.06)

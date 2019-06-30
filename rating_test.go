@@ -130,10 +130,43 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
-func TestDefaultWithCompute(t *testing.T) {
-	r := rating.DefaultWithCompute(50.0, 350.0, 100.0)
-	expected := 0.199409
-	if r.Volatility() != expected {
-		t.Errorf("rating.ComputeInitialVolatility got %v, expected %v", r.Volatility(), expected)
+func TestNewVolatility(t *testing.T) {
+	cases := []struct {
+		name     string
+		start    float64
+		count    float64
+		expected float64
+	}{
+		{"normal", 50.0, 100.0, 0.199409},
+		{"zero", 50.0, 0.0, 2.014761},
 	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := rating.NewVolatility(c.start, c.count)
+			if got != c.expected {
+				t.Errorf("rating.NewVolatility got %v, expected %v", got, c.expected)
+			}
+		})
+	}
+}
+
+func TestAverage(t *testing.T) {
+	ratings := []rating.Rating{
+		rating.New(1500.0, 250.0, 0.21),
+		rating.New(1700.0, 50.0, 0.20),
+		rating.New(1600.0, 50.0, 0.25),
+	}
+	got := rating.Average(ratings)
+	t.Log(got.Deviation())
+	expected := rating.New(1600.0, 86.60, 0.22)
+	if got.Strength() != expected.Strength() {
+		t.Errorf("rating.Average Strength got %v, expected %v", got.Strength(), expected.Strength())
+	}
+	if got.Deviation() != expected.Deviation() {
+		t.Errorf("rating.Average Deviation got %v, expected %v", got.Deviation(), expected.Deviation())
+	}
+	if got.Volatility() != expected.Volatility() {
+		t.Errorf("rating.Average Volatility got %v, expected %v", got.Volatility(), expected.Volatility())
+	}
+
 }
