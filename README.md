@@ -1,8 +1,7 @@
 # rating
 [![GoDoc](https://godoc.org/github.com/mashiike/rating?status.svg)](https://godoc.org/github.com/mashiike/rating)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mashiike/rating)](https://goreportcard.com/report/github.com/mashiike/rating)
-[![CircleCI](https://circleci.com/gh/mashiike/rating/tree/master.svg?style=svg)](https://circleci.com/gh/mashiike/rating/tree/master)
-
+![Test](https://github.com/mashiike/rating/workflows/Test/badge.svg)
 
 ## Usage: basic
 This is the Go implementation of Gliko2 Rating
