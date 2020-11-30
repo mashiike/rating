@@ -279,11 +279,11 @@ func (r Rating) Update(opponents []Rating, scores []float64, tau float64) (Ratin
 type Estimated struct {
 	sync.Mutex
 	// in ref[1], this value is v^-1
-	Accuracy float64 `json:"accuracy"`
+	Accuracy float64 `json:"accuracy" db:"accuracy"`
 	// in ref[1], this value is delta
-	Improvement float64 `json:"improvement"`
+	Improvement float64 `json:"improvement" db:"improvement"`
 	// base fixed rating
-	Fixed Rating `json:"fixed"`
+	Fixed Rating `json:"fixed" db:"fixed"`
 }
 
 //NewEstimated is initial estimated value constractor
